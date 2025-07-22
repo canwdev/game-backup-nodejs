@@ -18,7 +18,7 @@ function replaceEnvVars(filePath) {
 
 // 函数：执行 rclone 命令，返回 Promise
 function runRclone(sourcePath, destPath) {
-  const command = `rclone sync "${sourcePath}" "${destPath}" --track-renames --track-renames-strategy modtime,leaf --progress -v --checkers 32  --exclude ".git/"`;
+  const command = `rclone sync "${sourcePath}" "${destPath}" --transfers 32 --checkers 64 --track-renames --track-renames-strategy modtime,leaf --progress -v --exclude ".git/"`;
   // console.log(`执行命令: ${command}`);
 
   return new Promise((resolve, reject) => {
@@ -75,15 +75,17 @@ async function backupRestore({
         // 调用 rclone
         if (isRestore) {
           // 恢复时，将目标路径作为源路径，源路径作为目标路径
+          console.log(`[${item.name}] rclone 正在恢复: ${destPath} -> ${srcPath}`);
           await runRclone(destPath, srcPath);
-          console.log(`[${item.name}] rclone 恢复完成: ${destPath} -> ${srcPath}`);
+          console.log(`[${item.name}] rclone 恢复完成`);
         } else {
           // if (isGitBackup) {
           //   await gitAutoBackup(destPath, `备份前`);
           // }
 
+          console.log(`[${item.name}] rclone 正在备份: ${srcPath} -> ${destPath}`);
           await runRclone(srcPath, destPath);
-          console.log(`[${item.name}] rclone 备份完成: ${srcPath} -> ${destPath}`);
+          console.log(`[${item.name}] rclone 备份完成`);
 
           if (isGitBackup) {
             await gitAutoBackup(destPath, `自动备份`);
