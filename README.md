@@ -42,3 +42,14 @@ Windows 用户可直接右键 `backup.js` 选择打开方式为始终使用 `nod
   }
 ]
 ```
+
+## 如何查找游戏存档位置
+
+- 使用 [Everything](https://www.voidtools.com/zh-cn/downloads/) 搜索游戏同名文件夹
+- 一般可能位于以下文件夹中：
+  - `%USERPROFILE%\AppData\Roaming`
+  - `%USERPROFILE%\AppData\LocalLow`
+  - `%USERPROFILE%\AppData\Local`
+  - `%USERPROFILE%\Documents`
+  - `%USERPROFILE%\Documents\My Games`
+- 一些游戏会把存档放在游戏同名目录下，可以观察更新时间来判断
