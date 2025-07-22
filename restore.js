@@ -3,10 +3,14 @@ const path = require('path')
 
 
 async function main() {
-  await backupRestore({
-    basePath: path.join(__dirname),
-    isRestore: true,
-  })
+  try {
+    await backupRestore({
+      basePath: path.join(__dirname),
+      isRestore: true,
+    })
+  } catch (err) {
+    console.error(err);
+  }
 
   waitExit()
 }

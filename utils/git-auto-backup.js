@@ -1,10 +1,15 @@
 const { exec } = require('child_process');
 const fs = require('fs').promises;
 const path = require('path');
-const util = require('util');
 
-// 将 exec 函数 Promise 化，以便在 async/await 中使用
-const execPromise = util.promisify(exec);
+// 封装执行 shell 命令的函数
+async function execPromise(command, options = {}) {
+  return new Promise((resolve, reject) => {
+    exec(command, options, (error, stdout, stderr) => {
+      resolve({ stdout, stderr, error });
+    });
+  });
+}
 
 /**
  * 自动备份指定目录下的文件到 Git 仓库。
@@ -30,7 +35,13 @@ async function gitAutoBackup(absolutePath, message = 'Auto Backup') {
     }
 
     const gitPath = path.join(absolutePath, '.git');
-    const execOptions = { cwd: absolutePath }; // 指定命令执行的当前工作目录
+    const execOptions = {
+      cwd: absolutePath, // 指定命令执行的当前工作目录
+      env: {
+        ...process.env, // 继承当前进程的环境变量
+        GIT_TERMINAL_PROMPT: '0', // <-- 关键：禁止 Git 弹出任何交互式提示
+      },
+    };
 
     // 步骤 1: 检测 .git 目录是否存在
     try {
@@ -63,8 +74,8 @@ async function gitAutoBackup(absolutePath, message = 'Auto Backup') {
     } catch (error) {
       // 特殊情况处理：如果没有东西可提交，git commit 会返回非 0 退出码
       // 我们需要捕获这个“错误”，并将其视为正常情况
-      if (error.stdout && error.stdout.includes('nothing to commit, working tree clean')) {
-        console.log(`[INFO] Git ${error.stdout}`);
+      if (error.stdout && error.stdout.includes('nothing to commit')) {
+        console.log(`[INFO] Git: ${error.stdout}`);
       } else {
         throw error;
       }
@@ -72,7 +83,7 @@ async function gitAutoBackup(absolutePath, message = 'Auto Backup') {
 
     // console.log(`[COMPLETE] git backup process for ${absolutePath} finished successfully.`);
   } catch (error) {
-    console.error('Git Error', error);
+    console.error('[ERROR]', error);
     // 可以选择在这里退出进程或向上层抛出异常
     // process.exit(1); 
   }
