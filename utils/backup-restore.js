@@ -4,12 +4,15 @@ const os = require('os');
 const fsPromises = require('fs').promises;
 const { gitAutoBackup } = require('./git-auto-backup')
 
-// 函数：替换环境变量
+// 替换环境变量
 function replaceEnvVars(filePath) {
   if (filePath.includes('%USERPROFILE%')) {
     return filePath.replace('%USERPROFILE%', os.homedir());
   }
-  // 可以根据需要添加更多环境变量替换逻辑
+  // 将末尾的斜杠去除
+  if (filePath.endsWith('/') || filePath.endsWith('\\')) {
+    return filePath.slice(0, -1);
+  }
   return filePath;
 }
 
@@ -52,7 +55,7 @@ async function backupRestore({
         let srcPath = item.srcPath;
         const isGitBackup = item.isGitBackup;
 
-        // 转换成绝对路径
+        // 替换环境变量
         srcPath = replaceEnvVars(srcPath);
 
         // 检查源路径是否存在
@@ -64,7 +67,7 @@ async function backupRestore({
         }
 
         // 目标路径
-        const destPath = item.destPath || path.join(basePath, 'backup', backupName);
+        let destPath = replaceEnvVars(item.destPath || path.join(basePath, 'backup', backupName))
 
         // 创建目标目录（如果不存在）
         await fsPromises.mkdir(destPath, { recursive: true });
@@ -89,6 +92,7 @@ async function backupRestore({
       } catch (error) {
         console.error(`[${item.name}] rclone 备份出错: ${error}`);
       }
+      console.log('\n');
     }
   } catch (err) {
     if (err.code === 'ENOENT') {
