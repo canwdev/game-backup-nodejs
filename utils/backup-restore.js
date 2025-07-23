@@ -17,9 +17,35 @@ function replaceEnvVars(filePath) {
 }
 
 // 函数：执行 rclone 命令，返回 Promise
-function runRclone(sourcePath, destPath) {
-  const command = `rclone sync "${sourcePath}" "${destPath}" --transfers 32 --checkers 64 --track-renames --track-renames-strategy modtime,leaf --progress -v --exclude ".git/"`;
-  // console.log(`执行命令: ${command}`);
+function runRclone(
+  sourcePath,
+  destPath,
+  {
+    transfers = 32,
+    checkers = 64,
+    exclude = '',
+    include = '',
+  }) {
+  let command = `rclone sync "${sourcePath}" "${destPath}" --transfers ${transfers} --checkers ${checkers} --track-renames --track-renames-strategy modtime,leaf`;
+  // --progress -v
+
+  if (exclude) {
+    if (!Array.isArray(exclude)) {
+      exclude = [exclude];
+    }
+    exclude.forEach((ex) => {
+      command += ` --exclude "${ex}"`;
+    });
+  }
+  if (include) {
+    if (!Array.isArray(include)) {
+      include = [include];
+    }
+    include.forEach((inl) => {
+      command += ` --include "${inl}"`;
+    });
+  }
+  console.log(`执行命令: ${command}`);
 
   return new Promise((resolve, reject) => {
     exec(command, (error, stdout, stderr) => {
@@ -50,10 +76,23 @@ async function backupRestore({
     const config = JSON.parse(data);
 
     for (const item of config) {
+      console.log('\n');
       try {
-        const backupName = item.name;
-        let srcPath = item.srcPath;
-        const isGitBackup = item.isGitBackup;
+        let {
+          name,
+          isGitBackup,
+          srcPath,
+          exclude,
+          include,
+          disabled
+        } = item;
+        if (disabled) {
+          console.log(`[${item.name}] 已禁用，跳过备份`);
+          continue;
+        }
+        if (isGitBackup && !exclude) {
+          exclude = '.git';
+        }
 
         // 替换环境变量
         srcPath = replaceEnvVars(srcPath);
@@ -67,7 +106,7 @@ async function backupRestore({
         }
 
         // 目标路径
-        let destPath = replaceEnvVars(item.destPath || path.join(basePath, 'backup', backupName))
+        let destPath = replaceEnvVars(item.destPath || path.join(basePath, 'backup', name))
 
         // 创建目标目录（如果不存在）
         await fsPromises.mkdir(destPath, { recursive: true });
@@ -76,7 +115,7 @@ async function backupRestore({
         if (isRestore) {
           // 恢复时，将目标路径作为源路径，源路径作为目标路径
           console.log(`[${item.name}] rclone 正在恢复: ${destPath} -> ${srcPath}`);
-          await runRclone(destPath, srcPath);
+          await runRclone(destPath, srcPath, { exclude, include });
           console.log(`[${item.name}] rclone 恢复完成`);
         } else {
           // if (isGitBackup) {
@@ -84,7 +123,7 @@ async function backupRestore({
           // }
 
           console.log(`[${item.name}] rclone 正在备份: ${srcPath} -> ${destPath}`);
-          await runRclone(srcPath, destPath);
+          await runRclone(srcPath, destPath, { exclude, include });
           console.log(`[${item.name}] rclone 备份完成`);
 
           if (isGitBackup) {
@@ -94,7 +133,6 @@ async function backupRestore({
       } catch (error) {
         console.error(`[${item.name}] rclone 备份出错: ${error}`);
       }
-      console.log('\n');
     }
   } catch (err) {
     if (err.code === 'ENOENT') {

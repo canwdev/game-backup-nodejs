@@ -5,7 +5,6 @@ async function main() {
   try {
     await backupRestore({
       basePath: path.join(__dirname),
-      isGitBackup: true,
     })
   } catch (err) {
     console.error(err);

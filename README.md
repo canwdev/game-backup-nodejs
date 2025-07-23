@@ -24,21 +24,58 @@ Windows 用户可直接右键 `backup.js` 选择打开方式为始终使用 `nod
 
 ## 配置文件示例：
 
+注意：标准 JSON 不支持注释，请在使用时删除注释。
+
 ```json
 [
   {
-    "name": "StardewValley",
-    "srcPath": "%USERPROFILE%\\AppData\\Roaming\\StardewValley"
-  },
-  {
     // 名称
-    "name": "pvzHE",
+    "name": "StardewValley",
     // 源路径，绝对路径
+    "srcPath": "%USERPROFILE%\\AppData\\Roaming\\StardewValley"
+  }
+]
+```
+
+## 高级用法
+
+```json
+[
+  {
+    "name": "pvzHE",
     "srcPath": "C:\\ProgramData\\PopCap Games\\PlantsVsZombies\\pvzHE\\yourdata",
-    // 备份到哪里，绝对路径，非必填，默认备份到配置文件同目录下的 backup/${name} 文件夹
+    // 备份到哪里，绝对路径，非必填，默认备份到配置文件同目录下的 ./backup/${name} 文件夹
     "destPath": "D:\\GameSavesBackup\\pvzHEBackup",
     // 是否自动使用 git 备份，非必填，默认 false
     "isGitBackup": true
+  }
+  {
+    "name": "Everything",
+    "srcPath": "%USERPROFILE%\\AppData\\Roaming\\Everything",
+    // 支持排除单个文件或文件夹，参考 https://rclone.org/filtering/
+    "exclude": "Run History.csv"
+  },
+  {
+    "name": "Listary",
+    "srcPath": "%USERPROFILE%\\AppData\\Roaming\\Listary",
+    // 支持排除多个文件或文件夹
+    "exclude": ["**/Cache/*", "History_*.*", "DiskSearch.db"]
+  },
+  {
+    // 禁用这条同步规则
+    "disabled": true,
+    "name": "home",
+    "srcPath": "%USERPROFILE%",
+    // 首先排除所有文件
+    "exclude": "**",
+    // 然后只包含以下文件
+    "include": [
+      ".gitconfig",
+      ".ssh/**"
+    ]
+    // 由于 rclone 必须先遍历（检查）整个源目录，构建一个完整的文件列表，然后才能对这个列表应用你的 --include 和 --exclude 规则。
+    // 这意味着，如果你有很多文件，并且你只需要同步其中的一小部分，那么 rclone 将会花费很长时间来遍历整个源目录。
+    // 所以尽量不要在大型目录使用此功能
   }
 ]
 ```
