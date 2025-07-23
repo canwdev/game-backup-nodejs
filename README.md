@@ -131,3 +131,19 @@ async function main() {
 
 main();
 ```
+
+### Windows 常用路径变量
+
+使用`运行`输入以下变量可快速定位到对应文件夹
+
+```
+%USERPROFILE% = C:\Users\用户名
+%APPDATA% = C:\Users\用户名\AppData\Roaming
+%LOCALAPPDATA% = C:\Users\用户名\AppData\Local
+%SystemRoot% = C:\WINDOWS
+%windir% = C:\WINDOWS
+%SystemDrive% = C:
+%ProgramData% = C:\ProgramData
+%ProgramFiles% = C:\Program Files
+%ProgramFiles(x86)% = C:\Program Files (x86)
+```

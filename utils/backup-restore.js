@@ -6,14 +6,31 @@ const { gitAutoBackup } = require('./git-auto-backup')
 
 // 替换环境变量
 function replaceEnvVars(filePath) {
-  if (filePath.includes('%USERPROFILE%')) {
-    return filePath.replace('%USERPROFILE%', os.homedir());
-  }
+  const env = process.env;
+  let replacedPath = filePath;
+
+  const homeDir = env.USERPROFILE || os.homedir()
+  const winDir = env.SystemRoot || env.windir || 'C:\\Windows'
+  const systemDrive = env.SystemDrive || 'C:'
+
+  // 使用正则表达式进行全局替换，忽略大小写
+  replacedPath = replacedPath.replace(/%USERPROFILE%/gi, homeDir);
+  replacedPath = replacedPath.replace(/%APPDATA%/gi, env.APPDATA || path.join(homeDir, 'AppData', 'Roaming'));
+  replacedPath = replacedPath.replace(/%LOCALAPPDATA%/gi, env.LOCALAPPDATA || path.join(homeDir, 'AppData', 'Local'));
+
+  replacedPath = replacedPath.replace(/%SystemRoot%/gi, winDir);
+  replacedPath = replacedPath.replace(/%windir%/gi, winDir);
+  replacedPath = replacedPath.replace(/%SystemDrive%/gi, systemDrive);
+
+  replacedPath = replacedPath.replace(/%ProgramData%/gi, env.ProgramData || 'C:\\ProgramData');
+  replacedPath = replacedPath.replace(/%ProgramFiles%/gi, env.ProgramFiles || 'C:\\Program Files');
+  replacedPath = replacedPath.replace(/%ProgramFiles\(x86\)%/gi, env['ProgramFiles(x86)'] || 'C:\\Program Files (x86)');
+
   // 将末尾的斜杠去除
-  if (filePath.endsWith('/') || filePath.endsWith('\\')) {
-    return filePath.slice(0, -1);
+  if (replacedPath.endsWith('/') || replacedPath.endsWith('\\')) {
+    return replacedPath.slice(0, -1);
   }
-  return filePath;
+  return replacedPath;
 }
 
 // 函数：执行 rclone 命令，返回 Promise
@@ -61,7 +78,9 @@ function runRclone(
 }
 
 async function backupRestore({
+  // 备份配置文件所在的目录
   basePath,
+  // 是否为恢复模式
   isRestore = false,
 } = {}) {
   if (!basePath) {
@@ -123,7 +142,6 @@ async function backupRestore({
           await fsPromises.mkdir(destPath, { recursive: true });
         }
 
-        // 调用 rclone
         if (isRestore) {
           // 恢复时，将目标路径作为源路径，源路径作为目标路径
           console.log(`[${item.name}] rclone 正在恢复: ${destPath} -> ${srcPath}`);
@@ -159,11 +177,7 @@ async function backupRestore({
           // 名称
           "name": "pvzHE",
           // 源路径，绝对路径
-          "srcPath": "C:\\ProgramData\\PopCap Games\\PlantsVsZombies\\pvzHE\\yourdata",
-          // 备份到哪里，绝对路径，非必填
-          "destPath": "D:\\GameSavesBackup\\pvzHEBackup",
-          // 是否自动备份到 git
-          "isGitBackup": true
+          "srcPath": "C:\\ProgramData\\PopCap Games\\PlantsVsZombies\\pvzHE\\yourdata"
         }
       ]
       await fsPromises.writeFile(configFilePath, JSON.stringify(demoContent, null, 2), 'utf8');
