@@ -1,28 +1,33 @@
 # Node.js 游戏存档备份工具
 
-- 也可用于备份其他文件
+- 也可用于备份配置文件
 - 无需任何第三方依赖，直接安装 `nodejs` 和 `rclone` 即可运行
 - 此工具使用 `rclone sync` 命令进行本地备份和恢复，所以需要安装 `rclone`
-- 如需使用 `git` 功能，还需安装 `git`
+- 如需使用 `git` 存档功能，还需安装 `git`
 
-初次运行，可直接执行 `node backup.js`，会在当前目录下生成 `config.json` 示例文件，修改后即可使用
+> 此工具仅在 Windows 上测试过，其他平台未测试。
+> Windows 用户可直接右键 `backup.js` 选择打开方式为始终使用 `node.exe`，后续使用时直接双击即可。
+> 备份的数据会放在 `./backup` 文件夹下
 
-此工具仅在 Windows 上测试过，其他平台未测试。
-Windows 用户可直接右键 `backup.js` 选择打开方式为始终使用 `node.exe`，后续使用时直接双击即可。
+## 1. 安装
 
-## 如何安装 nodejs
+### 1.1 安装 nodejs
 
 前往 https://nodejs.org/zh-cn/download 下载对应操作系统的安装包，安装即可。
 
-## 如何安装 rclone
+### 1.2 安装 rclone
 
 前往 https://rclone.org/downloads/ 下载对应操作系统的 zip，解压后获得 `rclone.exe`，将文件复制到 `C:\Windows` 目录即可。
 
-## 如何安装 git
+### 1.3 安装 git（可选）
 
-前往 https://git-scm.com/downloads/win 下载对应操作系统的安装包，安装即可。
+前往 https://git-scm.com/downloads/win 下载安装即可。
 
-## 配置文件示例：
+## 2. 配置文件
+
+初次使用，可直接执行 `node backup.js`，会在当前目录下生成 `config.json` 示例文件，修改后即可使用。
+
+### 2.1 配置文件示例：
 
 注意：标准 JSON 不支持注释，请在使用时删除注释。
 
@@ -37,7 +42,7 @@ Windows 用户可直接右键 `backup.js` 选择打开方式为始终使用 `nod
 ]
 ```
 
-## 高级用法
+### 2.2 高级配置
 
 ```json
 [
@@ -80,7 +85,9 @@ Windows 用户可直接右键 `backup.js` 选择打开方式为始终使用 `nod
 ]
 ```
 
-## 如何查找游戏存档位置
+## 3. 其他
+
+### 如何查找游戏存档位置
 
 - 使用 [Everything](https://www.voidtools.com/zh-cn/downloads/) 搜索游戏同名文件夹
 - 一般可能位于以下文件夹中：
@@ -90,3 +97,37 @@ Windows 用户可直接右键 `backup.js` 选择打开方式为始终使用 `nod
   - `%USERPROFILE%\Documents`
   - `%USERPROFILE%\Documents\My Games`
 - 一些游戏会把存档放在游戏同名目录下，可以观察更新时间来判断
+
+### 在 node.js 中作为库使用
+
+直接安装：
+
+```
+bun add https://github.com/canwdev/game-backup-nodejs.git
+```
+
+或在 `package.json` 中添加：
+
+```json
+{
+  "dependencies": {
+    "game-backup-nodejs": "https://github.com/canwdev/game-backup-nodejs.git"
+  }
+}
+```
+
+在 node.js 中使用：
+
+```js
+const { backupRestore } = require("game-backup-nodejs/utils/backup-restore");
+const path = require("path");
+
+async function main() {
+  await backupRestore({
+    // 配置文件所在目录
+    basePath: path.join(__dirname),
+  });
+}
+
+main();
+```
