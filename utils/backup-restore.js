@@ -80,36 +80,48 @@ async function backupRestore({
       try {
         let {
           name,
+          // 是否自动备份到 git
           isGitBackup,
+          // 源路径
           srcPath,
+          // 排除的文件或目录
           exclude,
+          // 包含的文件或目录
           include,
-          disabled
+          // 是否禁用
+          disabled = false,
+          // 是否忽略本地路径检查（如果路径是rclone远程路径，可以传入true）
+          ignorePathCheck = false,
         } = item;
         if (disabled) {
           console.log(`[${item.name}] 已禁用，跳过备份`);
           continue;
         }
         if (isGitBackup && !exclude) {
-          exclude = '.git';
+          // 如果是git备份，默认排除 .git 目录
+          exclude = '.git/';
         }
 
         // 替换环境变量
         srcPath = replaceEnvVars(srcPath);
 
-        // 检查源路径是否存在
-        try {
-          await fsPromises.access(srcPath);
-        } catch (err) {
-          console.error(`[${item.name}] 源路径不存在，跳过备份: ${srcPath}`);
-          continue;
+        if (!ignorePathCheck) {
+          // 检查源路径是否存在
+          try {
+            await fsPromises.access(srcPath);
+          } catch (err) {
+            console.error(`[${item.name}] 源路径不存在，跳过备份: ${srcPath}`);
+            continue;
+          }
         }
 
         // 目标路径
         let destPath = replaceEnvVars(item.destPath || path.join(basePath, 'backup', name))
 
-        // 创建目标目录（如果不存在）
-        await fsPromises.mkdir(destPath, { recursive: true });
+        if (!ignorePathCheck) {
+          // 创建目标目录（如果不存在）
+          await fsPromises.mkdir(destPath, { recursive: true });
+        }
 
         // 调用 rclone
         if (isRestore) {
