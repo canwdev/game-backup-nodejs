@@ -2,5 +2,6 @@
   "name": "game-backup-nodejs",
   "version": "1.0.0",
   "repository": "https://github.com/canwdev/game-backup-nodejs.git",
-  "license": "MIT"
+  "license": "MIT",
+  "main": "backup.js"
 }
