@@ -10,7 +10,7 @@
     "build:exe": "bun build --compile --minify --sourcemap --bytecode ./main.js --outfile ./dist/game-backup-cli"
   },
   "dependencies": {
-    "prompts": "^2.4.2",
+    "enquirer": "^2.4.1",
     "which": "^5.0.0"
   }
 }
