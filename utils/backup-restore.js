@@ -5,7 +5,7 @@ const fsPromises = require('fs').promises;
 const { gitAutoBackup } = require('./git-auto-backup')
 
 // 替换环境变量
-function replaceEnvVars(filePath) {
+const replaceEnvVars = (filePath) => {
   const env = process.env;
   let replacedPath = filePath;
 
@@ -33,8 +33,8 @@ function replaceEnvVars(filePath) {
   return replacedPath;
 }
 
-// 函数：执行 rclone 命令，返回 Promise
-function runRclone(
+// 执行 rclone 命令，返回 Promise
+const runRclone = (
   sourcePath,
   destPath,
   {
@@ -42,7 +42,7 @@ function runRclone(
     checkers = 64,
     exclude = '',
     include = '',
-  }) {
+  }) => {
   let command = `rclone sync "${sourcePath}" "${destPath}" --transfers ${transfers} --checkers ${checkers} --track-renames --track-renames-strategy modtime,leaf`;
   // --progress -v
 
@@ -77,93 +77,12 @@ function runRclone(
   });
 }
 
-async function backupRestore({
-  // 备份配置文件所在的目录
-  basePath,
-  // 是否为恢复模式
-  isRestore = false,
-} = {}) {
-  if (!basePath) {
-    throw new Error('basePath 不能为空');
-  }
-
-  const configFilePath = path.join(basePath, 'config.json');
-
+// 读取配置文件
+const readConfigFile = async (configFilePath) => {
   try {
     // 读取配置文件
     const data = await fsPromises.readFile(configFilePath, 'utf8');
-    const config = JSON.parse(data);
-
-    for (const item of config) {
-      console.log('\n');
-      try {
-        let {
-          name,
-          // 是否自动备份到 git
-          isGitBackup,
-          // 源路径
-          srcPath,
-          // 排除的文件或目录
-          exclude,
-          // 包含的文件或目录
-          include,
-          // 是否禁用
-          disabled = false,
-          // 是否忽略本地路径检查（如果路径是rclone远程路径，可以传入true）
-          ignorePathCheck = false,
-        } = item;
-        if (disabled) {
-          console.log(`[${item.name}] 已禁用，跳过备份`);
-          continue;
-        }
-        if (isGitBackup && !exclude) {
-          // 如果是git备份，默认排除 .git 目录
-          exclude = '.git/';
-        }
-
-        // 替换环境变量
-        srcPath = replaceEnvVars(srcPath);
-
-        if (!ignorePathCheck) {
-          // 检查源路径是否存在
-          try {
-            await fsPromises.access(srcPath);
-          } catch (err) {
-            console.error(`[${item.name}] 源路径不存在，跳过备份: ${srcPath}`);
-            continue;
-          }
-        }
-
-        // 目标路径
-        let destPath = replaceEnvVars(item.destPath || path.join(basePath, 'backup', name))
-
-        if (!ignorePathCheck) {
-          // 创建目标目录（如果不存在）
-          await fsPromises.mkdir(destPath, { recursive: true });
-        }
-
-        if (isRestore) {
-          // 恢复时，将目标路径作为源路径，源路径作为目标路径
-          console.log(`[${item.name}] rclone 正在恢复: ${destPath} -> ${srcPath}`);
-          await runRclone(destPath, srcPath, { exclude, include });
-          console.log(`[${item.name}] rclone 恢复完成`);
-        } else {
-          // if (isGitBackup) {
-          //   await gitAutoBackup(destPath, `备份前`);
-          // }
-
-          console.log(`[${item.name}] rclone 正在备份: ${srcPath} -> ${destPath}`);
-          await runRclone(srcPath, destPath, { exclude, include });
-          console.log(`[${item.name}] rclone 备份完成`);
-
-          if (isGitBackup) {
-            await gitAutoBackup(destPath, `自动备份`);
-          }
-        }
-      } catch (error) {
-        console.error(`[${item.name}] rclone 备份出错: ${error}`);
-      }
-    }
+    return JSON.parse(data);
   } catch (err) {
     if (err.code === 'ENOENT') {
       console.error(`配置文件不存在，将创建一个空的 config.json 文件。`);
@@ -182,13 +101,106 @@ async function backupRestore({
       ]
       await fsPromises.writeFile(configFilePath, JSON.stringify(demoContent, null, 2), 'utf8');
       console.log(`已创建示例配置文件。请修改该文件，然后重新运行本程序。`);
-    } else if (err instanceof SyntaxError) {
+      return null
+    }
+    if (err instanceof SyntaxError) {
       console.error(`解析 ${configFilePath} 出错: ${err.message}`);
-    } else {
-      console.error(`发生错误: ${err.message}`);
+    }
+    throw err;
+  }
+}
+
+// 备份单个项目
+const backupRestoreSingleItem = async (item, { basePath, isRestore = false }) => {
+  let {
+    name,
+    // 是否自动备份到 git
+    isGitBackup,
+    // 源路径
+    srcPath,
+    // 排除的文件或目录
+    exclude,
+    // 包含的文件或目录
+    include,
+    // 是否禁用
+    disabled = false,
+    // 是否忽略本地路径检查（如果路径是rclone远程路径，可以传入true）
+    ignorePathCheck = false,
+  } = item;
+  if (disabled) {
+    console.log(`[${item.name}] 已禁用，跳过备份`);
+    return;
+  }
+  if (isGitBackup && !exclude) {
+    // 如果是git备份，默认排除 .git 目录
+    exclude = '.git/';
+  }
+
+  // 替换环境变量
+  srcPath = replaceEnvVars(srcPath);
+
+  if (!ignorePathCheck) {
+    // 检查源路径是否存在
+    try {
+      await fsPromises.access(srcPath);
+    } catch (err) {
+      console.error(`[${item.name}] 源路径不存在，跳过备份: ${srcPath}`);
+      return;
     }
   }
 
+  // 目标路径
+  let destPath = replaceEnvVars(item.destPath || path.join(basePath, 'backup', name))
+
+  if (!ignorePathCheck) {
+    // 创建目标目录（如果不存在）
+    await fsPromises.mkdir(destPath, { recursive: true });
+  }
+
+  if (isRestore) {
+    // 恢复时，将目标路径作为源路径，源路径作为目标路径
+    console.log(`[${item.name}] rclone 正在恢复: ${destPath} -> ${srcPath}`);
+    await runRclone(destPath, srcPath, { exclude, include });
+    console.log(`[${item.name}] rclone 恢复完成`);
+  } else {
+    console.log(`[${item.name}] rclone 正在备份: ${srcPath} -> ${destPath}`);
+    await runRclone(srcPath, destPath, { exclude, include });
+    console.log(`[${item.name}] rclone 备份完成`);
+
+    if (isGitBackup) {
+      await gitAutoBackup(destPath);
+    }
+  }
+}
+
+const backupRestore = async ({
+  // 备份配置文件所在的目录
+  basePath,
+  // 是否为恢复模式
+  isRestore = false,
+} = {}) => {
+  if (!basePath) {
+    throw new Error('basePath 不能为空');
+  }
+
+  const configFilePath = path.join(basePath, 'config.json');
+
+  try {
+    const config = await readConfigFile(configFilePath);
+    if (!config) {
+      return;
+    }
+    for (const item of config) {
+      console.log('\n');
+      try {
+        await backupRestoreSingleItem(item, { basePath, isRestore })
+      } catch (error) {
+        console.error(`[${item.name}] 错误: ${error}`);
+      }
+    }
+  } catch (err) {
+    console.error(`发生错误: ${err.message}`);
+  }
 }
 
 // 使程序不退出，除非按任意键
@@ -201,6 +213,9 @@ function waitExit() {
 }
 
 module.exports = {
+  replaceEnvVars,
+  readConfigFile,
+  backupRestoreSingleItem,
   backupRestore,
   runRclone,
   waitExit,

@@ -1,0 +1,16 @@
+{
+  "name": "game-backup-nodejs-cli",
+  "version": "1.0.0",
+  "repository": "https://github.com/canwdev/game-backup-nodejs.git",
+  "main": "main.js",
+  "license": "MIT",
+  "scripts": {
+    "dev": "bun run main.js",
+    "build": "bun build --target=node --format=cjs --minify ./main.js --outfile ./dist/game-backup-cli.js",
+    "build:exe": "bun build --compile --minify --sourcemap --bytecode ./main.js --outfile ./dist/game-backup-cli"
+  },
+  "dependencies": {
+    "prompts": "^2.4.2",
+    "which": "^5.0.0"
+  }
+}
