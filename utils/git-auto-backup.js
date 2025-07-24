@@ -17,7 +17,7 @@ async function execPromise(command, options = {}) {
  *
  * @param {string} absolutePath 要备份的目录的绝对路径。
  */
-async function gitAutoBackup(absolutePath, message = 'Auto Backup') {
+async function gitAutoBackup(absolutePath, commitMessage = `Auto Backup - ${new Date().toLocaleString()}`) {
   // console.log(`[INFO] Starting git backup process for: ${absolutePath}`);
 
   try {
@@ -65,7 +65,6 @@ async function gitAutoBackup(absolutePath, message = 'Auto Backup') {
 
     // 步骤 3: 执行 git commit
     // console.log('[INFO] Committing changes...');
-    const commitMessage = `${message} - ${new Date().toLocaleString()}`;
     const commitCommand = `git commit -m "${commitMessage}"`;
 
     try {

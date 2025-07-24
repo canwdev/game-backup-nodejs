@@ -125,7 +125,7 @@ const path = require("path");
 async function main() {
   await backupRestore({
     // 配置文件所在目录
-    basePath: path.join(__dirname),
+    basePath: process.cwd(),
   });
 }
 
@@ -147,3 +147,7 @@ main();
 %ProgramFiles% = C:\Program Files
 %ProgramFiles(x86)% = C:\Program Files (x86)
 ```
+
+### CLI 工具
+
+进入 [cli](./cli/package.json) 目录查看更多用法。
