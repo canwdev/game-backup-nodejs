@@ -5,7 +5,7 @@
   "main": "main.js",
   "license": "MIT",
   "scripts": {
-    "dev": "bun run main.js",
+    "dev": "bun --watch run main.js",
     "build": "bun build --target=node --format=cjs --minify ./main.js --outfile ./dist/game-backup-cli.js",
     "build:exe": "bun build --compile --minify --sourcemap --bytecode ./main.js --outfile ./dist/game-backup-cli"
   },

@@ -1,8 +1,8 @@
 const path = require('path');
-const { exec } = require('child_process');
+const {exec} = require('child_process');
 const os = require('os');
 const fsPromises = require('fs').promises;
-const { gitAutoBackup } = require('./git-auto-backup')
+const {gitAutoBackup} = require('./git-auto-backup')
 
 // 替换环境变量
 const replaceEnvVars = (filePath) => {
@@ -111,7 +111,7 @@ const readConfigFile = async (configFilePath) => {
 }
 
 // 备份单个项目
-const backupRestoreSingleItem = async (item, { basePath, isRestore = false }) => {
+const backupRestoreSingleItem = async (item, {basePath, isRestore = false}) => {
   let {
     name,
     // 是否自动备份到 git
@@ -126,6 +126,8 @@ const backupRestoreSingleItem = async (item, { basePath, isRestore = false }) =>
     disabled = false,
     // 是否忽略本地路径检查（如果路径是rclone远程路径，可以传入true）
     ignorePathCheck = false,
+    transfers = 32,
+    checkers = 64,
   } = item;
   if (disabled) {
     console.log(`[${item.name}] 已禁用，跳过备份`);
@@ -154,17 +156,23 @@ const backupRestoreSingleItem = async (item, { basePath, isRestore = false }) =>
 
   if (!ignorePathCheck) {
     // 创建目标目录（如果不存在）
-    await fsPromises.mkdir(destPath, { recursive: true });
+    await fsPromises.mkdir(destPath, {recursive: true});
   }
 
+  const rcloneConfig = {
+    transfers,
+    checkers,
+    exclude,
+    include
+  }
   if (isRestore) {
     // 恢复时，将目标路径作为源路径，源路径作为目标路径
     console.log(`[${item.name}] rclone 正在恢复: ${destPath} -> ${srcPath}`);
-    await runRclone(destPath, srcPath, { exclude, include });
+    await runRclone(destPath, srcPath,);
     console.log(`[${item.name}] rclone 恢复完成`);
   } else {
     console.log(`[${item.name}] rclone 正在备份: ${srcPath} -> ${destPath}`);
-    await runRclone(srcPath, destPath, { exclude, include });
+    await runRclone(srcPath, destPath, rcloneConfig);
     console.log(`[${item.name}] rclone 备份完成`);
 
     if (isGitBackup) {
@@ -193,7 +201,7 @@ const backupRestore = async ({
     for (const item of config) {
       console.log('\n');
       try {
-        await backupRestoreSingleItem(item, { basePath, isRestore })
+        await backupRestoreSingleItem(item, {basePath, isRestore})
       } catch (error) {
         console.error(`[${item.name}] 错误: ${error}`);
       }
