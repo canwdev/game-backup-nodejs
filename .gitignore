@@ -2,3 +2,4 @@ backup
 config.json
 node_modules
 dist
+.idea
