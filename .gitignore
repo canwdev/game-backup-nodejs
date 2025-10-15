@@ -1,5 +1,7 @@
 backup
-config.json
 node_modules
 dist
 .idea
+
+/config.json
+/config-editor.html
