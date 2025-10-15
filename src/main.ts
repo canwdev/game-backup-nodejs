@@ -55,7 +55,7 @@ async function main() {
     const config = await readConfigFile(configFilePath)
 
     if (!config) {
-      console.error(`配置文件不存在，将创建一个空的 config.json 文件。`)
+      console.error(`配置文件不存在，将创建一个空的 config.json 文件。\n`)
       // 创建空的 config.json 文件
       const demoContent: IConfigItem[] = [
         {
@@ -63,17 +63,15 @@ async function main() {
           srcPath: '%USERPROFILE%\\AppData\\Roaming\\StardewValley',
         },
         {
-          // 名称
           name: 'pvzHE',
-          // 源路径，绝对路径
           srcPath: 'C:\\ProgramData\\PopCap Games\\PlantsVsZombies\\pvzHE\\yourdata',
         },
       ]
       // 询问是否创建示例配置文件
-      const answer = await enquirer.prompt({
+      const {answer}: {answer: boolean} = await enquirer.prompt({
         type: 'confirm',
         initial: true,
-        name: 'createDemo',
+        name: 'answer',
         message: '是否创建示例配置文件？',
       })
       if (answer) {
@@ -81,7 +79,7 @@ async function main() {
         console.log(`已创建示例配置文件。请修改该文件，然后重新运行本程序。`)
         await openConfigEditor()
       }
-      return
+      process.exit(0)
     }
 
     type FnType = 'backup' | 'restore' | 'configEditor' | 'exit'
@@ -104,11 +102,12 @@ async function main() {
     if (selectedFn === 'exit') {
       process.exit(0)
     }
+    const isRestore = selectedFn === 'restore'
     const { backupTargets }: { backupTargets: string[] } = await enquirer.prompt([
       {
         type: 'multiselect',
         name: 'backupTargets',
-        message: `${selectedFn === 'backup' ? '备份' : '还原'}: 请选择项目(空格切换选中，按A切换全选，默认全部)`,
+        message: `${isRestore ? '还原' : '备份'}: 请选择项目(空格切换选中，按A切换全选，默认全部)`,
         choices: config.map((item) => {
           return {
             message: `${item.name}`,
@@ -119,7 +118,6 @@ async function main() {
       },
     ])
 
-    const isRestore = selectedFn === 'restore'
 
     let list = []
     if (backupTargets.length === 0) {
@@ -135,7 +133,6 @@ async function main() {
         return nameMap[item.name]
       })
     }
-    // console.log({ isRestore, list });
 
     for (const item of list) {
       console.log('\n')
@@ -175,10 +172,10 @@ HTML文件路径：${configEditorPath}
 }
 
 export async function waitExit() {
-  const answer = await enquirer.prompt({
+  const {answer}: {answer: boolean} = await enquirer.prompt({
     type: 'confirm',
     initial: true,
-    name: 'createDemo',
+    name: 'answer',
     message: '按回车键退出...',
   })
   if (answer) {

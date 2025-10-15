@@ -124,20 +124,21 @@ export async function backupRestoreSingleItem(item: IConfigItem, { basePath, isR
   // 替换环境变量
   srcPath = replaceEnvVars(srcPath)
 
+  // 目标路径
+  const destPath = replaceEnvVars(item.destPath || path.join(basePath, 'backup', name))
+
   if (!ignorePathCheck) {
+    const checkPath = isRestore ? destPath : srcPath
     // 检查源路径是否存在
     try {
-      await fsPromises.access(srcPath)
+      await fsPromises.access(checkPath)
     }
     // eslint-disable-next-line unused-imports/no-unused-vars
     catch (err) {
-      console.error(`[${item.name}] 源路径不存在，跳过备份: ${srcPath}`)
+      console.error(`[${item.name}] 路径不存在，跳过${isRestore ? '恢复' : '备份'}: ${checkPath}`)
       return
     }
   }
-
-  // 目标路径
-  const destPath = replaceEnvVars(item.destPath || path.join(basePath, 'backup', name))
 
   if (!ignorePathCheck) {
     // 创建目标目录（如果不存在）
