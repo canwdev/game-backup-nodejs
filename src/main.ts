@@ -9,7 +9,7 @@ import which from 'which'
 // @ts-ignore-next-line
 import configEditorHtml from './config-editor.html' with { type: 'text' }
 import { VERSION } from './types/version'
-import { backupRestoreSingleItem, readConfigFile, waitExit } from './utils/backup-restore'
+import { backupRestoreSingleItem, readConfigFile } from './utils/backup-restore'
 import { opener } from './utils/opener'
 
 // 检测部署环境必要命令
@@ -47,7 +47,7 @@ async function main() {
 `)
   try {
     if (!checkEnv(['rclone'])) {
-      waitExit()
+      await waitExit()
       return
     }
 
@@ -108,7 +108,7 @@ async function main() {
       {
         type: 'multiselect',
         name: 'backupTargets',
-        message: `请选择${selectedFn === 'backup' ? '备份' : '还原'}项目(可多选，按 a 切换全选)`,
+        message: `${selectedFn === 'backup' ? '备份' : '还原'}: 请选择项目(空格切换选中，按A切换全选，默认全部)`,
         choices: config.map((item) => {
           return {
             message: `${item.name}`,
@@ -147,11 +147,11 @@ async function main() {
       }
     }
 
-    waitExit()
+    await waitExit()
   }
   catch (error) {
     console.error(error)
-    waitExit()
+    await waitExit()
   }
 }
 
@@ -171,7 +171,17 @@ HTML文件路径：${configEditorPath}
   // }
   await fsPromises.writeFile(configEditorPath, String(configEditorHtml), 'utf8')
   opener(configEditorPath)
-  await new Promise((resolve) => {
-    setTimeout(resolve, 1000)
+  await waitExit()
+}
+
+export async function waitExit() {
+  const answer = await enquirer.prompt({
+    type: 'confirm',
+    initial: true,
+    name: 'createDemo',
+    message: '按回车键退出...',
   })
+  if (answer) {
+    process.exit(0)
+  }
 }

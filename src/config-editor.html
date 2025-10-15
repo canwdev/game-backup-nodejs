@@ -145,7 +145,7 @@
     }
 
     .config-item:hover {
-      background-color: #F4F7F9;
+      background-color: rgba(187, 187, 187, 0.1);
     }
 
     .config-item:last-child {
@@ -356,20 +356,12 @@ DiskSearch.db"></textarea>
       editingIndex: -1,
     }
 
-    const newBtn = document.getElementById('newBtn')
-    const loadBtn = document.getElementById('loadBtn')
-    const saveBtn = document.getElementById('saveBtn')
-    const addConfigBtn = document.getElementById('addConfigBtn')
     const configList = document.getElementById('configList')
     const rawJson = document.getElementById('rawJson')
-    const applyJsonBtn = document.getElementById('applyJsonBtn')
     const editDialog = document.getElementById('editDialog')
     const editForm = document.getElementById('editForm')
-    const cancelBtn = document.getElementById('cancelBtn')
     const dialogTitle = document.getElementById('dialogTitle')
     const fileInput = document.getElementById('fileInput')
-    const generateNameBtn = document.getElementById('generateNameBtn')
-    const insertVariable = document.getElementById('insertVariable')
 
     const renderConfigList = () => {
       if (appState.configData.length === 0) {
@@ -390,13 +382,9 @@ DiskSearch.db"></textarea>
     `).join('')
     }
 
-    const renderRawJson = () => {
-      rawJson.value = JSON.stringify(appState.configData, null, 2)
-    }
-
     const updateUI = () => {
       renderConfigList()
-      renderRawJson()
+      rawJson.value = JSON.stringify(appState.configData, null, 2)
     }
 
     const loadContent = (content) => {
@@ -428,13 +416,13 @@ DiskSearch.db"></textarea>
       return data || ''
     }
 
-    newBtn.addEventListener('click', () => {
+    document.getElementById('newBtn').addEventListener('click', () => {
       appState.configData = []
       appState.fileHandle = null
       updateUI()
     })
 
-    loadBtn.addEventListener('click', async () => {
+    document.getElementById('loadBtn').addEventListener('click', async () => {
       if (window.showOpenFilePicker) {
         try {
           [appState.fileHandle] = await window.showOpenFilePicker({
@@ -472,7 +460,7 @@ DiskSearch.db"></textarea>
       fileInput.value = '' // Reset for next selection
     })
 
-    saveBtn.addEventListener('click', async () => {
+    document.getElementById('saveBtn').addEventListener('click', async () => {
       const jsonString = rawJson.value
       // const jsonString = JSON.stringify(appState.configData, null, 2)
 
@@ -486,6 +474,7 @@ DiskSearch.db"></textarea>
           const writable = await appState.fileHandle.createWritable()
           await writable.write(jsonString)
           await writable.close()
+          console.log('Save successful')
         } catch (err) {
           if (err.name !== 'AbortError') {
             console.error('Error saving file:', err)
@@ -505,7 +494,7 @@ DiskSearch.db"></textarea>
       }
     })
 
-    applyJsonBtn.addEventListener('click', () => {
+    document.getElementById('applyJsonBtn').addEventListener('click', () => {
       try {
         const newConfigData = JSON.parse(rawJson.value)
         if (!Array.isArray(newConfigData)) {
@@ -518,6 +507,7 @@ DiskSearch.db"></textarea>
       }
     })
 
+    const insertVariable = document.getElementById('insertVariable')
     insertVariable.addEventListener('change', (e) => {
       const selectedVariable = e.target.value
       if (selectedVariable) {
@@ -526,8 +516,12 @@ DiskSearch.db"></textarea>
       }
       insertVariable.value = ''
     })
-    const extractLastSegment = (path) => path.match(/[\/\\]([^\/\\]*)$/)?.[1] || path;
-    generateNameBtn.addEventListener('click', () => {
+
+    const extractLastSegment = (path) => {
+      path = path.replace(/[\\/]+$/, '')
+      return path.match(/[\/\\]([^\/\\]*)$/)?.[1] || path
+    }
+    document.getElementById('generateNameBtn').addEventListener('click', () => {
       editForm.elements.configName.value = extractLastSegment(editForm.elements.srcPath.value || '') || `backup_${Date.now()}`
       editForm.elements.configName.focus()
     })
@@ -557,9 +551,9 @@ DiskSearch.db"></textarea>
       editDialog.showModal()
     }
 
-    addConfigBtn.addEventListener('click', () => openEditDialog())
+    document.getElementById('addConfigBtn').addEventListener('click', () => openEditDialog())
 
-    cancelBtn.addEventListener('click', () => editDialog.close())
+    document.getElementById('cancelBtn').addEventListener('click', () => editDialog.close())
 
     configList.addEventListener('click', (e) => {
       const button = e.target.closest('button')

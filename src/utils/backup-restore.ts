@@ -166,12 +166,3 @@ export async function backupRestoreSingleItem(item: IConfigItem, { basePath, isR
     }
   }
 }
-
-// 使程序不退出，除非按任意键
-export function waitExit(): void {
-  console.log('\n')
-  console.log('按任意键退出...')
-  process.stdin.setRawMode(true)
-  process.stdin.resume()
-  process.stdin.on('data', process.exit.bind(process, 0))
-}
