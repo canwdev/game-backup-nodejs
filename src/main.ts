@@ -1,5 +1,5 @@
 import type { IConfigItem } from './types/config'
-import { existsSync } from 'node:fs'
+// import { existsSync } from 'node:fs'
 import fsPromises from 'node:fs/promises'
 import * as os from 'node:os'
 import * as path from 'node:path'
@@ -8,6 +8,7 @@ import enquirer from 'enquirer'
 import which from 'which'
 // @ts-ignore-next-line
 import configEditorHtml from './config-editor.html' with { type: 'text' }
+import { VERSION } from './types/version'
 import { backupRestoreSingleItem, readConfigFile, waitExit } from './utils/backup-restore'
 import { opener } from './utils/opener'
 
@@ -42,7 +43,7 @@ const configFilePath = path.join(basePath, 'config.json')
 
 async function main() {
   console.log(`<--===([ Game Backup CLI ])===-->
-         存档备份还原工具
+    存档备份还原工具 v${VERSION}
 `)
   try {
     if (!checkEnv(['rclone'])) {
@@ -165,9 +166,10 @@ HTML文件路径：${configEditorPath}
 配置文件路径：${configFilePath}
 保存后请重新运行本程序。`)
 
-  if (!existsSync(configEditorPath)) {
-    await fsPromises.writeFile(configEditorPath, String(configEditorHtml), 'utf8')
-  }
+  // if (!existsSync(configEditorPath)) {
+  //   await fsPromises.writeFile(configEditorPath, String(configEditorHtml), 'utf8')
+  // }
+  await fsPromises.writeFile(configEditorPath, String(configEditorHtml), 'utf8')
   opener(configEditorPath)
   await new Promise((resolve) => {
     setTimeout(resolve, 1000)

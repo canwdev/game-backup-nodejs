@@ -2,21 +2,20 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Local JSON Config Editor</title>
+  <meta content="width=device-width, initial-scale=1.0" name="viewport">
+  <title>Backup Config Editor</title>
   <style>
     :root {
       --bg-color: #f4f7f9;
-      --main-color: #ffffff;
       --text-color: #333;
-      --primary-color: #007bff;
-      --primary-hover-color: #0056b3;
-      --danger-color: #dc3545;
-      --danger-hover-color: #c82333;
+      --main-color: #ffffff;
+      --primary-color: #8bc34a;
+      --danger-color: #f44336;
       --border-color: #ddd;
-      --shadow-color: rgba(0,0,0,0.1);
+      --shadow-color: rgba(0, 0, 0, 0.1);
       --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
     }
+
     * {
       box-sizing: border-box;
     }
@@ -26,21 +25,42 @@
       background-color: var(--bg-color);
       color: var(--text-color);
       margin: 0;
+      height: 100vh;
+      transition: background-color 0.2s ease;
+    }
+
+    /* Style for drag-and-drop feedback */
+    body.dragover::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(109, 109, 109, 0.2);
+      outline: 2px dashed var(--primary-color);
+      outline-offset: -10px;
+      pointer-events: none;
+    }
+
+    .main-wrapper {
+      margin: 0 auto;
+      max-width: 1600px;
       padding: 20px;
       display: flex;
       flex-direction: column;
-      height: 100vh
+      height: 100%;
     }
 
     h1 {
+      margin-top: 0;
       border-bottom: 1px solid var(--border-color);
       padding-bottom: 10px;
     }
+
     h2 {
-      margin-top: 0;
+      margin: 0;
     }
-
-
 
     .toolbar {
       display: flex;
@@ -57,14 +77,24 @@
       font-size: 14px;
       font-weight: 500;
       transition: background-color 0.2s ease;
-      color: white;
-      background-color: #333333;
     }
 
-    .button-primary { background-color: var(--primary-color); }
-    .button-primary:hover { background-color: var(--primary-hover-color); }
-    .button-danger { background-color: var(--danger-color); }
-    .button-danger:hover { background-color: var(--danger-hover-color); }
+    .button:active {
+      opacity: .7;
+    }
+
+    .button-primary {
+      background-color: var(--primary-color);
+      color: white;
+    }
+
+    .button-danger {
+      color: var(--danger-color);
+    }
+
+    .color-danger {
+      color: var(--danger-color)
+    }
 
     .container {
       display: flex;
@@ -90,36 +120,53 @@
       align-items: center;
       margin-bottom: 16px;
     }
+
     .panel-header h2 {
       margin: 0;
     }
 
     .config-list-container {
       overflow-y: auto;
+      margin-left: -20px;
+      margin-right: -20px;
+    }
+
+    .config-list-container p {
+      padding: 0 20px;
     }
 
     .config-item {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 15px;
+      padding: 10px 20px;
       border-bottom: 1px solid var(--border-color);
+      gap: 8px;
     }
+
+    .config-item:hover {
+      background-color: #F4F7F9;
+    }
+
     .config-item:last-child {
       border-bottom: none;
     }
+
     .config-item-name {
       font-weight: 600;
     }
+
     .config-item-path {
       font-size: 0.9em;
       color: #666;
       word-break: break-all;
     }
-    .config-item.disabled {
+
+    .config-item.disabled .config-item-content {
       opacity: 0.5;
       text-decoration: line-through;
     }
+
     .config-item-actions {
       display: flex;
       gap: 10px;
@@ -128,7 +175,7 @@
     .raw-json-editor {
       flex-grow: 1;
       width: 100%;
-      font-family: monospace;
+      font-family: Consolas, monospace;
       font-size: 14px;
       border: 1px solid var(--border-color);
       border-radius: 5px;
@@ -136,115 +183,170 @@
       resize: vertical;
     }
 
-    /* Dialog Styles */
     dialog {
       border: 1px solid var(--border-color);
       border-radius: 8px;
       box-shadow: 0 5px 15px var(--shadow-color);
-      padding: 25px;
+      padding: 20px;
       width: 80%;
-      max-width: 600px;
+      max-width: 700px;
     }
+
     dialog::backdrop {
       background: rgba(0, 0, 0, 0.5);
-      backdrop-filter: blur(2px);
+      /*backdrop-filter: blur(2px);*/
     }
+
     .form-grid {
       display: grid;
       grid-template-columns: 120px 1fr;
       gap: 15px;
       align-items: center;
     }
+
     .form-grid label {
       font-weight: 500;
       text-align: right;
     }
-    .form-grid input[type="text"], .form-grid textarea {
+
+    .form-grid input[type="text"], .form-grid input[type="number"], select, .form-grid textarea {
       width: 100%;
       padding: 8px;
       border: 1px solid var(--border-color);
       border-radius: 4px;
       box-sizing: border-box;
+      font-family: Consolas, monospace;
+      font-size: 15px;
     }
+
+    select {
+      width: fit-content;
+      font-family: Consolas, monospace;
+    }
+
     .form-grid textarea {
       height: 80px;
       resize: vertical;
-      font-family: monospace;
+      font-family: Consolas, monospace;
     }
-    .form-grid .checkbox-group {
+
+    .form-grid .input-group {
       display: flex;
-      gap: 15px;
+      gap: 10px;
       align-items: center;
     }
+
+    .title-wrapper {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 26px;
+    }
+
     .form-actions {
-      margin-top: 20px;
       display: flex;
       justify-content: flex-end;
       gap: 10px;
     }
-
   </style>
 </head>
 <body>
-<h1>Local JSON Config Editor</h1>
+<div class="main-wrapper">
+  <h1>Backup Config Editor</h1>
 
-<div class="toolbar">
-  <button id="newBtn" class="button button-primary">New Config File</button>
-  <button id="loadBtn" class="button button-primary">Load JSON File</button>
-  <button id="saveBtn" class="button button-primary">Save JSON File</button>
-</div>
-
-<div class="container">
-  <div class="panel">
-    <div class="panel-header">
-      <h2>Configurations</h2>
-      <button id="addConfigBtn" class="button button-primary">Add New</button>
-    </div>
-    <div id="configList" class="config-list-container">
-      <p>No configuration loaded. Click "Load JSON File" or "New Config File".</p>
-    </div>
+  <div class="toolbar">
+    <button class="button button-primary" id="newBtn">New Config</button>
+    <button class="button button-primary" id="loadBtn">Load JSON File</button>
+    <button class="button button-primary" id="saveBtn">Save JSON File</button>
   </div>
-  <div class="panel">
-    <div class="panel-header">
-      <h2>Raw JSON</h2>
-      <button id="applyJsonBtn" class="button button-primary">Apply Changes</button>
+
+  <div class="container">
+    <div class="panel">
+      <div class="panel-header">
+        <h2>Configurations</h2>
+        <button class="button button-primary" id="addConfigBtn">Add New</button>
+      </div>
+      <div class="config-list-container" id="configList">
+        <p>No configuration loaded. Click "Load JSON File", "New Config File", or drop a file here.</p>
+      </div>
     </div>
-    <textarea id="rawJson" class="raw-json-editor" placeholder="Raw JSON will be displayed here..."></textarea>
+    <div class="panel">
+      <div class="panel-header">
+        <h2>Raw JSON</h2>
+        <button class="button button-primary" id="applyJsonBtn">Apply Changes</button>
+      </div>
+      <textarea class="raw-json-editor" id="rawJson" placeholder="Raw JSON will be displayed here..."></textarea>
+    </div>
   </div>
 </div>
 
 <dialog id="editDialog">
   <form id="editForm">
-    <h2 id="dialogTitle">Edit Configuration</h2>
-    <input type="hidden" name="index" value="-1">
-    <div class="form-grid">
-      <label for="name">Name:</label>
-      <input type="text" id="name" name="name" required>
-
-      <label for="srcPath">Source Path:</label>
-      <input type="text" id="srcPath" name="srcPath" required>
-
-      <label for="destPath">Destination Path:</label>
-      <input type="text" id="destPath" name="destPath" placeholder="Optional. Default: ./backup/${name}">
-
-      <label>Options:</label>
-      <div class="checkbox-group">
-        <label for="isGitBackup" style="text-align: left;"><input type="checkbox" id="isGitBackup" name="isGitBackup"> Use Git Backup</label>
-        <label for="disabled" style="text-align: left;"><input type="checkbox" id="disabled" name="disabled"> Disabled</label>
+    <div class="title-wrapper">
+      <h2 id="dialogTitle">Edit Configuration</h2>
+      <div class="form-actions">
+        <button class="button" id="cancelBtn" type="button">Cancel</button>
+        <button class="button button-primary" type="submit">Save</button>
       </div>
-
-      <label for="exclude">Exclude:</label>
-      <textarea id="exclude" name="exclude" placeholder="One pattern per line. Optional."></textarea>
-
-      <label for="include">Include:</label>
-      <textarea id="include" name="include" placeholder="One pattern per line. Optional."></textarea>
     </div>
-    <div class="form-actions">
-      <button type="button" id="cancelBtn" class="button">Cancel</button>
-      <button type="submit" class="button button-primary">Save</button>
+
+    <input name="index" type="hidden" value="-1">
+    <div class="form-grid">
+      <label for="configName"><b class="color-danger">*</b> Name:</label>
+      <div class="input-group">
+        <input autocomplete="off" id="configName" name="configName" placeholder="Unique" required type="text">
+        <button class="button" id="generateNameBtn" type="button">↺</button>
+      </div>
+      <label for="srcPath"><b class="color-danger">*</b> Source Path:</label>
+      <div class="input-group">
+        <input autocomplete="off" id="srcPath" name="srcPath" placeholder="Path to the source directory." required
+               type="text">
+        <select id="insertVariable" name="insertVariable" style="width: 50px;">
+          <option disabled value="">+ Variable:</option>
+          <option value="%USERPROFILE%">%USERPROFILE%</option>
+          <option value="%APPDATA%">%APPDATA%</option>
+          <option value="%LOCALAPPDATA%">%LOCALAPPDATA%</option>
+          <option value="%SystemRoot%">%SystemRoot%</option>
+          <option value="%windir%">%windir%</option>
+          <option value="%SystemDrive%">%SystemDrive%</option>
+          <option value="%ProgramData%">%ProgramData%</option>
+          <option value="%ProgramFiles%">%ProgramFiles%</option>
+          <option value="%ProgramFiles(x86)%">%ProgramFiles(x86)%</option>
+        </select>
+      </div>
+      <label for="destPath">Destination Path:</label>
+      <input autocomplete="off" id="destPath" name="destPath" placeholder="Optional. Default: ./backup/${name}"
+             type="text">
+      <label>Options:</label>
+      <div class="input-group">
+        <label for="disabled" style="text-align: left;"><input id="disabled" name="disabled" type="checkbox">
+          Disabled</label>
+        <label for="isGitBackup" style="text-align: left;"><input id="isGitBackup" name="isGitBackup" type="checkbox">
+          Use Git Backup</label>
+        <label for="ignorePathCheck" style="text-align: left;"><input id="ignorePathCheck" name="ignorePathCheck"
+                                                                      type="checkbox"> Ignore Path Check</label>
+      </div>
+      <label for="exclude">Exclude:</label>
+      <textarea id="exclude" name="exclude" placeholder="Optional. One pattern per line. Example:
+**
+**/Cache/*
+History_*.*
+DiskSearch.db"></textarea>
+      <label for="include">Include:</label>
+      <textarea id="include" name="include" placeholder="Optional. One pattern per line. Example:
+.gitconfig
+.ssh/**"></textarea>
+
+      <label for="transfers">Transfers:</label>
+      <input id="transfers" min="0" name="transfers" placeholder="Optional. Default: 32" type="number">
+      <label for="checkers">Checkers:</label>
+      <input id="checkers" min="0" name="checkers" placeholder="Optional. Default: 64" type="number">
     </div>
   </form>
 </dialog>
+
+<!-- Hidden file input for fallback -->
+<input accept=".json" id="fileInput" style="display: none;" type="file">
 
 <script>
   document.addEventListener('DOMContentLoaded', () => {
@@ -252,242 +354,312 @@
       configData: [],
       fileHandle: null,
       editingIndex: -1,
-    };
+    }
 
-    // DOM Elements
-    const newBtn = document.getElementById('newBtn');
-    const loadBtn = document.getElementById('loadBtn');
-    const saveBtn = document.getElementById('saveBtn');
-    const addConfigBtn = document.getElementById('addConfigBtn');
-    const configList = document.getElementById('configList');
-    const rawJson = document.getElementById('rawJson');
-    const applyJsonBtn = document.getElementById('applyJsonBtn');
-    const editDialog = document.getElementById('editDialog');
-    const editForm = document.getElementById('editForm');
-    const cancelBtn = document.getElementById('cancelBtn');
-    const dialogTitle = document.getElementById('dialogTitle');
+    const newBtn = document.getElementById('newBtn')
+    const loadBtn = document.getElementById('loadBtn')
+    const saveBtn = document.getElementById('saveBtn')
+    const addConfigBtn = document.getElementById('addConfigBtn')
+    const configList = document.getElementById('configList')
+    const rawJson = document.getElementById('rawJson')
+    const applyJsonBtn = document.getElementById('applyJsonBtn')
+    const editDialog = document.getElementById('editDialog')
+    const editForm = document.getElementById('editForm')
+    const cancelBtn = document.getElementById('cancelBtn')
+    const dialogTitle = document.getElementById('dialogTitle')
+    const fileInput = document.getElementById('fileInput')
+    const generateNameBtn = document.getElementById('generateNameBtn')
+    const insertVariable = document.getElementById('insertVariable')
 
-    // --- Core Logic ---
-
-    /**
-     * Renders the list of configurations on the left panel.
-     */
     const renderConfigList = () => {
       if (appState.configData.length === 0) {
-        configList.innerHTML = `<p>No configurations found. Click "Add New" to create one.</p>`;
-        return;
+        configList.innerHTML = `<p>No configurations found. Click "Add New" to create one.</p>`
+        return
       }
-
       configList.innerHTML = appState.configData.map((config, index) => `
-                    <div class="config-item ${config.disabled ? 'disabled' : ''}">
-                        <div>
-                            <div class="config-item-name">${config.name}</div>
-                            <div class="config-item-path">${config.srcPath}</div>
-                        </div>
-                        <div class="config-item-actions">
-                            <button class="button button-primary" data-index="${index}" data-action="edit">Edit</button>
-                            <button class="button button-danger" data-index="${index}" data-action="delete">Delete</button>
-                        </div>
-                    </div>
-                `).join('');
-    };
+      <div class="config-item ${config.disabled ? 'disabled' : ''}">
+          <div class="config-item-content">
+              <div class="config-item-name">${config.name}</div>
+              <div class="config-item-path">${config.srcPath}</div>
+          </div>
+          <div class="config-item-actions">
+              <button class="button button-primary" data-index="${index}" data-action="edit">Edit</button>
+              <button class="button button-danger" data-index="${index}" data-action="delete">Delete</button>
+          </div>
+      </div>
+    `).join('')
+    }
 
-    /**
-     * Renders the raw JSON in the right panel textarea.
-     */
     const renderRawJson = () => {
-      rawJson.value = JSON.stringify(appState.configData, null, 2);
-    };
+      rawJson.value = JSON.stringify(appState.configData, null, 2)
+    }
 
-    /**
-     * Updates both UI panels.
-     */
     const updateUI = () => {
-      renderConfigList();
-      renderRawJson();
-    };
+      renderConfigList()
+      renderRawJson()
+    }
 
-    /**
-     * Converts multiline string from textarea to string or array of strings.
-     * @param {string} str - The input string from a textarea.
-     * @returns {string|string[]|undefined}
-     */
+    const loadContent = (content) => {
+      try {
+        const newConfigData = JSON.parse(content)
+        if (!Array.isArray(newConfigData)) {
+          throw new Error("JSON root must be an array.")
+        }
+        appState.configData = newConfigData
+        updateUI()
+      } catch (err) {
+        console.error('Error parsing JSON:', err)
+        alert(`Error parsing JSON: ${err.message}`)
+      }
+    }
+
     const processMultiLineInput = (str) => {
-      if (!str.trim()) return undefined;
-      const lines = str.split('\n').map(s => s.trim()).filter(Boolean);
-      if (lines.length === 0) return undefined;
-      if (lines.length === 1) return lines[0];
-      return lines;
-    };
+      if (!str.trim()) return undefined
+      const lines = str.split('\n').map(s => s.trim()).filter(Boolean)
+      if (lines.length === 0) return undefined
+      if (lines.length === 1) return lines[0]
+      return lines
+    }
 
-    /**
-     * Converts a potential string or array into a multiline string for a textarea.
-     * @param {string|string[]} data - The input data.
-     * @returns {string}
-     */
     const formatForTextarea = (data) => {
       if (Array.isArray(data)) {
-        return data.join('\n');
+        return data.join('\n')
       }
-      return data || '';
-    };
+      return data || ''
+    }
 
-    // --- Event Handlers ---
-
-    /**
-     * Handles creating a new, empty configuration file state.
-     */
     newBtn.addEventListener('click', () => {
-      appState.configData = [];
-      appState.fileHandle = null;
-      updateUI();
-      // alert('New configuration created. Add items and click "Save" to create a file.');
-    });
+      appState.configData = []
+      appState.fileHandle = null
+      updateUI()
+    })
 
-    /**
-     * Handles loading a JSON file from disk.
-     */
     loadBtn.addEventListener('click', async () => {
-      try {
-        [appState.fileHandle] = await window.showOpenFilePicker({
-          types: [{ description: 'JSON Files', accept: { 'application/json': ['.json'] } }],
-        });
-        const file = await appState.fileHandle.getFile();
-        const content = await file.text();
-        appState.configData = JSON.parse(content);
-        updateUI();
-      } catch (err) {
-        if (err.name !== 'AbortError') {
-          console.error('Error loading file:', err);
-          alert(`Error loading file: ${err.message}`);
+      if (window.showOpenFilePicker) {
+        try {
+          [appState.fileHandle] = await window.showOpenFilePicker({
+            types: [{description: 'JSON Files', accept: {'application/json': ['.json']}}],
+          })
+          const file = await appState.fileHandle.getFile()
+          const content = await file.text()
+          loadContent(content)
+        } catch (err) {
+          if (err.name !== 'AbortError') {
+            console.error('Error loading file:', err)
+            alert(`Error loading file: ${err.message}`)
+          }
         }
+      } else {
+        fileInput.click()
       }
-    });
+    })
 
-    /**
-     * Handles saving the current configuration to a JSON file.
-     */
+    fileInput.addEventListener('change', (event) => {
+      const file = event.target.files[0]
+      if (!file) return
+
+      const reader = new FileReader()
+      reader.onload = (e) => {
+        loadContent(e.target.result)
+        appState.fileHandle = null // No handle with legacy input
+      }
+      reader.onerror = (e) => {
+        console.error('Error reading file:', e)
+        alert('Error reading file.')
+      }
+      reader.readAsText(file)
+
+      fileInput.value = '' // Reset for next selection
+    })
+
     saveBtn.addEventListener('click', async () => {
-      try {
-        // If no file handle exists, prompt for a new file location.
-        if (!appState.fileHandle) {
-          appState.fileHandle = await window.showSaveFilePicker({
-            types: [{ description: 'JSON Files', accept: { 'application/json': ['.json'] } }],
-          });
-        }
-        const writable = await appState.fileHandle.createWritable();
-        await writable.write(JSON.stringify(appState.configData, null, 2));
-        await writable.close();
-        // alert('File saved successfully!');
-      } catch (err) {
-        if (err.name !== 'AbortError') {
-          console.error('Error saving file:', err);
-          alert(`Error saving file: ${err.message}`);
-        }
-      }
-    });
+      const jsonString = rawJson.value
+      // const jsonString = JSON.stringify(appState.configData, null, 2)
 
-    /**
-     * Handles applying changes from the raw JSON editor.
-     */
+      if (window.showSaveFilePicker) {
+        try {
+          if (!appState.fileHandle) {
+            appState.fileHandle = await window.showSaveFilePicker({
+              types: [{description: 'JSON Files', accept: {'application/json': ['.json']}}],
+            })
+          }
+          const writable = await appState.fileHandle.createWritable()
+          await writable.write(jsonString)
+          await writable.close()
+        } catch (err) {
+          if (err.name !== 'AbortError') {
+            console.error('Error saving file:', err)
+            alert(`Error saving file: ${err.message}`)
+          }
+        }
+      } else {
+        const blob = new Blob([jsonString], {type: 'application/json'})
+        const url = URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = 'config.json'
+        document.body.appendChild(a)
+        a.click()
+        document.body.removeChild(a)
+        URL.revokeObjectURL(url)
+      }
+    })
+
     applyJsonBtn.addEventListener('click', () => {
       try {
-        const newConfigData = JSON.parse(rawJson.value);
+        const newConfigData = JSON.parse(rawJson.value)
         if (!Array.isArray(newConfigData)) {
-          throw new Error("The root of the JSON must be an array.");
+          throw new Error("The root of the JSON must be an array.")
         }
-        appState.configData = newConfigData;
-        renderConfigList(); // Only update the list, keep the raw JSON as is.
-        // alert('Raw JSON applied successfully.');
+        appState.configData = newConfigData
+        renderConfigList()
       } catch (err) {
-        alert(`Invalid JSON: ${err.message}`);
+        alert(`Invalid JSON: ${err.message}`)
       }
-    });
+    })
 
-    /**
-     * Opens the edit dialog, either for a new or existing item.
-     * @param {number} [index=-1] - The index of the item to edit. -1 for a new item.
-     */
+    insertVariable.addEventListener('change', (e) => {
+      const selectedVariable = e.target.value
+      if (selectedVariable) {
+        editForm.elements.srcPath.value += selectedVariable
+        editForm.elements.srcPath.focus()
+      }
+      insertVariable.value = ''
+    })
+    const extractLastSegment = (path) => path.match(/[\/\\]([^\/\\]*)$/)?.[1] || path;
+    generateNameBtn.addEventListener('click', () => {
+      editForm.elements.configName.value = extractLastSegment(editForm.elements.srcPath.value || '') || `backup_${Date.now()}`
+      editForm.elements.configName.focus()
+    })
+
     const openEditDialog = (index = -1) => {
-      appState.editingIndex = index;
-      editForm.reset();
+      appState.editingIndex = index
+      editForm.reset()
+      insertVariable.value = ''
       if (index === -1) {
-        dialogTitle.textContent = "Add New Configuration";
-        editForm.elements.index.value = -1;
+        dialogTitle.textContent = "Add New Configuration"
+        editForm.elements.index.value = -1
       } else {
-        dialogTitle.textContent = "Edit Configuration";
-        const config = appState.configData[index];
-        editForm.elements.index.value = index;
-        editForm.elements.name.value = config.name || '';
-        editForm.elements.srcPath.value = config.srcPath || '';
-        editForm.elements.destPath.value = config.destPath || '';
-        editForm.elements.isGitBackup.checked = !!config.isGitBackup;
-        editForm.elements.disabled.checked = !!config.disabled;
-        editForm.elements.exclude.value = formatForTextarea(config.exclude);
-        editForm.elements.include.value = formatForTextarea(config.include);
+        dialogTitle.textContent = "Edit Configuration"
+        const config = appState.configData[index]
+        editForm.elements.index.value = index
+        editForm.elements.configName.value = config.name || ''
+        editForm.elements.srcPath.value = config.srcPath || ''
+        editForm.elements.destPath.value = config.destPath || ''
+        editForm.elements.isGitBackup.checked = !!config.isGitBackup
+        editForm.elements.ignorePathCheck.checked = !!config.ignorePathCheck
+        editForm.elements.disabled.checked = !!config.disabled
+        editForm.elements.exclude.value = formatForTextarea(config.exclude)
+        editForm.elements.include.value = formatForTextarea(config.include)
+        editForm.elements.transfers.value = config.transfers
+        editForm.elements.checkers.value = config.checkers
       }
-      editDialog.showModal();
-    };
+      editDialog.showModal()
+    }
 
-    addConfigBtn.addEventListener('click', () => openEditDialog());
+    addConfigBtn.addEventListener('click', () => openEditDialog())
 
-    cancelBtn.addEventListener('click', () => editDialog.close());
+    cancelBtn.addEventListener('click', () => editDialog.close())
 
-    /**
-     * Handles clicks on the config list for edit/delete actions.
-     */
     configList.addEventListener('click', (e) => {
-      const button = e.target.closest('button');
-      if (!button) return;
+      const button = e.target.closest('button')
+      if (!button) return
 
-      const action = button.dataset.action;
-      const index = parseInt(button.dataset.index, 10);
+      const action = button.dataset.action
+      const index = parseInt(button.dataset.index, 10)
 
       if (action === 'edit') {
-        openEditDialog(index);
+        openEditDialog(index)
       } else if (action === 'delete') {
         if (confirm(`Are you sure you want to delete "${appState.configData[index].name}"?`)) {
-          appState.configData.splice(index, 1);
-          updateUI();
+          appState.configData.splice(index, 1)
+          updateUI()
         }
       }
-    });
+    })
 
-    /**
-     * Handles form submission for adding/editing a configuration.
-     */
     editForm.addEventListener('submit', (e) => {
-      e.preventDefault();
-
-      const formData = new FormData(editForm);
-      const index = parseInt(formData.get('index'), 10);
-
+      e.preventDefault()
+      const formData = new FormData(editForm)
+      const index = parseInt(formData.get('index'), 10)
       const newConfig = {
-        name: formData.get('name'),
+        name: formData.get('configName'),
         srcPath: formData.get('srcPath'),
         destPath: formData.get('destPath') || undefined,
         isGitBackup: formData.get('isGitBackup') === 'on' || undefined,
+        ignorePathCheck: formData.get('ignorePathCheck') === 'on' || undefined,
         disabled: formData.get('disabled') === 'on' || undefined,
         exclude: processMultiLineInput(formData.get('exclude')),
         include: processMultiLineInput(formData.get('include')),
-      };
-
-      // Clean up undefined properties
-      Object.keys(newConfig).forEach(key => newConfig[key] === undefined && delete newConfig[key]);
-
-      if (index === -1) { // Adding new
-        appState.configData.push(newConfig);
-      } else { // Updating existing
-        appState.configData[index] = newConfig;
+        transfers: parseInt(formData.get('transfers'), 10) || undefined,
+        checkers: parseInt(formData.get('checkers'), 10) || undefined,
+      }
+      // ensure name unique in configData
+      const findIndex = appState.configData.findIndex(c => c.name === newConfig.name)
+      if (findIndex !== -1 && findIndex !== index) {
+        alert('Configuration name must be unique.')
+        return
       }
 
-      updateUI();
-      editDialog.close();
-    });
+      Object.keys(newConfig).forEach(key => newConfig[key] === undefined && delete newConfig[key])
 
-    // Initial render
-    updateUI();
-  });
+      if (index === -1) {
+        appState.configData.push(newConfig)
+      } else {
+        appState.configData[index] = newConfig
+      }
+
+      updateUI()
+      editDialog.close()
+    })
+
+    const body = document.body
+    body.addEventListener('dragover', (e) => {
+      e.preventDefault()
+      body.classList.add('dragover')
+    })
+    body.addEventListener('dragleave', () => {
+      body.classList.remove('dragover')
+    })
+    body.addEventListener('drop', async (e) => {
+      e.preventDefault()
+      body.classList.remove('dragover')
+
+      appState.fileHandle = null
+      let file
+      // 尝试使用 fileHandle
+      if ('showOpenFilePicker' in window) {
+        for (const item of e.dataTransfer.items) {
+          if (item.kind === 'file') {
+            if (!('getAsFileSystemHandle' in item)) {
+              break
+            }
+            const handle = await item.getAsFileSystemHandle()
+            if (handle.kind !== 'directory') {
+              file = await handle.getFile()
+              appState.fileHandle = handle
+              console.log(handle)
+              break
+            }
+          }
+        }
+      }
+      if (!file) {
+        file = e.dataTransfer.files[0]
+      }
+      if (file && file.type === 'application/json') {
+        const reader = new FileReader()
+        reader.onload = (event) => {
+          loadContent(event.target.result)
+        }
+        reader.readAsText(file)
+      } else {
+        alert('Please drop a valid JSON file.')
+      }
+    })
+
+    updateUI()
+  })
 </script>
 </body>
 </html>

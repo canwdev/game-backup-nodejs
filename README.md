@@ -42,6 +42,8 @@
 
 ### 2.2 高级配置
 
+[config.ts](./src/types/config.ts)
+
 ```json
 [
   {
@@ -51,7 +53,7 @@
     "destPath": "D:\\GameSavesBackup\\pvzHEBackup",
     // 是否自动使用 git 备份，非必填，默认 false
     "isGitBackup": true
-  }
+  },
   {
     "name": "Everything",
     "srcPath": "%USERPROFILE%\\AppData\\Roaming\\Everything",
