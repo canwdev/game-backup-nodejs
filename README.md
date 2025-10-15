@@ -4,9 +4,6 @@
 - 此工具使用 `rclone sync` 命令进行本地备份和恢复
 - 如需使用 `git` 存档功能，还需安装 `git`
 
-> Windows 用户可直接右键 `backup.js` 选择打开方式为始终使用 `node.exe`，后续使用时直接双击即可。
-> 备份的数据会放在 `./backup` 文件夹下
-
 ## 1. 安装
 
 ### 1.1 安装 nodejs
@@ -21,9 +18,10 @@
 
 前往 https://git-scm.com/downloads/win 下载安装即可。
 
-## 2. 配置文件
+## 2. 初次使用
 
-初次使用，可直接执行 `node backup.js`，会在当前目录下生成 `config.json` 示例文件，修改后即可使用。
+- Windows 用户可直接右键 `game-backup-cli.cjs` 选择打开方式为始终使用 `node.exe`，后续使用时直接双击即可。
+- 备份的数据会放在 `./backup` 文件夹下
 
 ### 2.1 最简单的配置
 
