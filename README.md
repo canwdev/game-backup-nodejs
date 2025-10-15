@@ -1,11 +1,9 @@
 # Node.js 游戏存档备份工具
 
 - 也可用于备份配置文件
-- 无需任何第三方依赖，直接安装 `nodejs` 和 `rclone` 即可运行
-- 此工具使用 `rclone sync` 命令进行本地备份和恢复，所以需要安装 `rclone`
+- 此工具使用 `rclone sync` 命令进行本地备份和恢复
 - 如需使用 `git` 存档功能，还需安装 `git`
 
-> 此工具仅在 Windows 上测试过，其他平台未测试。
 > Windows 用户可直接右键 `backup.js` 选择打开方式为始终使用 `node.exe`，后续使用时直接双击即可。
 > 备份的数据会放在 `./backup` 文件夹下
 
@@ -98,40 +96,6 @@
   - `%USERPROFILE%\Documents\My Games`
 - 一些游戏会把存档放在游戏同名目录下，可以观察更新时间来判断
 
-### 高级用法：在 node.js 中作为库使用
-
-直接安装：
-
-```
-bun add https://github.com/canwdev/game-backup-nodejs.git
-```
-
-或在 `package.json` 中添加：
-
-```json
-{
-  "dependencies": {
-    "game-backup-nodejs": "https://github.com/canwdev/game-backup-nodejs.git"
-  }
-}
-```
-
-在 node.js 中使用：
-
-```js
-const { backupRestore } = require("game-backup-nodejs/utils/backup-restore");
-const path = require("path");
-
-async function main() {
-  await backupRestore({
-    // 配置文件所在目录
-    basePath: process.cwd(),
-  });
-}
-
-main();
-```
-
 ### Windows 常用路径变量
 
 使用`运行`输入以下变量可快速定位到对应文件夹
@@ -147,7 +111,3 @@ main();
 %ProgramFiles% = C:\Program Files
 %ProgramFiles(x86)% = C:\Program Files (x86)
 ```
-
-### CLI 工具
-
-进入 [cli](./cli/package.json) 目录查看更多用法。
