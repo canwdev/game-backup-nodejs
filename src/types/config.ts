@@ -7,13 +7,13 @@ export interface IConfigItem {
   destPath?: string
   // 是否自动创建 git 仓库并提交备份，默认 false
   isGitBackup?: boolean
-  // 排除的文件或目录
+  // 支持排除多个文件或文件夹，可选
   exclude?: string | string[]
-  // 包含的文件或目录
+  // 包含的文件或目录，可选
   include?: string | string[]
-  // 是否禁用
+  // 是否禁用，默认 false
   disabled?: boolean
-  // 是否忽略本地路径检查（如果路径是rclone远程路径，可以传入true）
+  // 是否忽略本地路径检查（如果路径是rclone远程路径，可以传入true），默认 false
   ignorePathCheck?: boolean
   // 默认 32
   transfers?: number
