@@ -40,7 +40,8 @@
 
 ### 2.2 高级配置
 
-[config.ts](./src/types/config.ts)
+- 配置定义：[config.ts](./src/types/config.ts)
+- [配置编辑器，使用浏览器打开](./src/config-editor.html)
 
 ```json
 [
