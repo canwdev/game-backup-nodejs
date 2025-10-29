@@ -7,7 +7,7 @@ import * as process from 'node:process'
 import enquirer from 'enquirer'
 import which from 'which'
 // @ts-ignore-next-line
-import configEditorHtml from './config-editor.html' with { type: 'text' }
+import configEditorHtml from '../docs/index.html' with { type: 'text' }
 import { VERSION } from './types/version'
 import { backupRestoreSingleItem, readConfigFile } from './utils/backup-restore'
 import { opener } from './utils/opener'
@@ -68,7 +68,7 @@ async function main() {
         },
       ]
       // 询问是否创建示例配置文件
-      const {answer}: {answer: boolean} = await enquirer.prompt({
+      const { answer }: { answer: boolean } = await enquirer.prompt({
         type: 'confirm',
         initial: true,
         name: 'answer',
@@ -117,7 +117,6 @@ async function main() {
         }),
       },
     ])
-
 
     let list = []
     if (backupTargets.length === 0) {
@@ -172,7 +171,7 @@ HTML文件路径：${configEditorPath}
 }
 
 export async function waitExit() {
-  const {answer}: {answer: boolean} = await enquirer.prompt({
+  const { answer }: { answer: boolean } = await enquirer.prompt({
     type: 'confirm',
     initial: true,
     name: 'answer',
