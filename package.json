@@ -6,6 +6,7 @@
   "type": "module",
   "scripts": {
     "dev": "bun --watch run src/main.ts",
+    "dev:editor": "bun run src/config-editor.html",
     "build": "bun build --target=node --format=cjs --minify src/main.ts --outfile ./dist/game-backup-cli.cjs",
     "build:exe": "bun build --compile --minify --sourcemap --bytecode src/main.ts --outfile ./dist/game-backup-cli",
     "lint": "eslint src/**/*.ts --fix"
