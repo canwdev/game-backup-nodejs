@@ -35,8 +35,26 @@ export function replaceEnvVars(filePath: string) {
   return replacedPath
 }
 
+// rclone copyto：适用于复制 单个文件，且可以直接 重命名 目标文件。
+// rclone copy：适用于复制 整个目录或多个文件。
+export async function runRcloneCopyTo(fromPath: string, toPath: string) {
+  return new Promise<void>((resolve, reject) => {
+    const command = `rclone copyto "${fromPath}" "${toPath}"`
+    console.log(`>>> ${command}`)
+    exec(command, (error, stdout, stderr) => {
+      if (error) {
+        console.error(`stderr: ${stderr}`)
+        reject(error)
+        return
+      }
+      // console.log(`stdout: ${stdout}`);
+      resolve()
+    })
+  })
+}
+
 // 执行 rclone 命令，返回 Promise
-export async function runRclone(fromPath: string, toPath: string, {
+export async function runRcloneSync(fromPath: string, toPath: string, {
   transfers = 32,
   checkers = 64,
   exclude = '',
@@ -66,7 +84,7 @@ export async function runRclone(fromPath: string, toPath: string, {
       command += ` --include "${inl}"`
     })
   }
-  console.log(`执行命令: ${command}`)
+  console.log(`>>> ${command}`)
 
   return new Promise<void>((resolve, reject) => {
     exec(command, (error, stdout, stderr) => {
@@ -106,6 +124,7 @@ export async function backupRestoreItem(item: IConfigItem, { basePath, isRestore
     srcFiles,
     name,
     srcPath,
+    destPath,
     isGitBackup,
     exclude,
     include,
@@ -118,24 +137,21 @@ export async function backupRestoreItem(item: IConfigItem, { basePath, isRestore
     console.log(`[${item.name}] 已禁用，跳过备份`)
     return
   }
-  if (!type) {
-    type = 'folder'
-  }
   if (type === 'files') {
-    console.log(`TODO: [${item.name}] 备份/还原多个文件未实现`, srcFiles)
+    await backRestoreFiles(item, { basePath, isRestore })
     return
   }
 
   if (isGitBackup && !exclude) {
     // 如果是git备份，默认排除 .git 目录
-    exclude = '.git/'
+    exclude = ['.git/']
   }
 
   // 替换环境变量
   srcPath = replaceEnvVars(srcPath)
 
   // 目标路径
-  const destPath = replaceEnvVars(item.destPath || path.join(basePath, 'backup', name))
+  destPath = replaceEnvVars(destPath || path.join(basePath, 'backup', name))
 
   if (!ignorePathCheck) {
     const checkPath = isRestore ? destPath : srcPath
@@ -145,7 +161,7 @@ export async function backupRestoreItem(item: IConfigItem, { basePath, isRestore
     }
     // eslint-disable-next-line unused-imports/no-unused-vars
     catch (err) {
-      console.error(`[${item.name}] 路径不存在，跳过${isRestore ? '恢复' : '备份'}: ${checkPath}`)
+      console.error(`[${item.name}] 路径不存在，跳过${isRestore ? '还原' : '备份'}: ${checkPath}`)
       return
     }
   }
@@ -162,16 +178,67 @@ export async function backupRestoreItem(item: IConfigItem, { basePath, isRestore
     include,
   }
   if (isRestore) {
-    // 恢复时，将目标路径作为源路径，源路径作为目标路径
-    console.log(`[${item.name}] rclone 正在恢复: ${destPath} -> ${srcPath}`)
-    await runRclone(destPath, srcPath, rcloneConfig)
-    console.log(`[${item.name}] rclone 恢复完成`)
+    // 还原时，将目标路径作为源路径，源路径作为目标路径
+    console.log(`[${item.name}] 正在还原: ${destPath} -> ${srcPath}`)
+    await runRcloneSync(destPath, srcPath, rcloneConfig)
+    console.log(`[${item.name}] 还原完成`)
   }
   else {
-    console.log(`[${item.name}] rclone 正在备份: ${srcPath} -> ${destPath}`)
-    await runRclone(srcPath, destPath, rcloneConfig)
-    console.log(`[${item.name}] rclone 备份完成`)
+    console.log(`[${item.name}] 正在备份: ${srcPath} -> ${destPath}`)
+    await runRcloneSync(srcPath, destPath, rcloneConfig)
+    console.log(`[${item.name}] 备份完成`)
 
+    if (isGitBackup) {
+      await gitAutoBackup(destPath)
+    }
+  }
+}
+
+async function backRestoreFiles(item: IConfigItem, { basePath, isRestore = false }: { basePath: string, isRestore?: boolean }) {
+  let {
+    type,
+    srcFiles,
+    destPath,
+    name,
+    isGitBackup,
+    disabled = false,
+  } = item
+  if (disabled || type !== 'files' || !srcFiles || srcFiles.length === 0) {
+    return
+  }
+  srcFiles = srcFiles.map(srcPath => replaceEnvVars(srcPath))
+  destPath = replaceEnvVars(destPath || path.join(basePath, 'backup', name))
+
+  if (isRestore) {
+    // 还原逻辑
+    let index = 0
+    for (const srcPath of srcFiles) {
+      const backupAbsPath = path.join(destPath, path.basename(srcPath))
+      console.log(`[${name}][${index + 1}/${srcFiles.length}] 正在还原: ${backupAbsPath} -> ${srcPath}`)
+      try {
+        await runRcloneCopyTo(backupAbsPath, srcPath)
+      }
+      catch (error: any) {
+        console.error(`[${name}][${index + 1}/${srcFiles.length}] 还原失败: ${error}`)
+      }
+      index++
+    }
+  }
+  else {
+    // 备份逻辑
+    await fsPromises.mkdir(destPath, { recursive: true })
+    let index = 0
+    for (const srcPath of srcFiles) {
+      const destAbsPath = path.join(destPath, path.basename(srcPath))
+      console.log(`[${name}][${index + 1}/${srcFiles.length}] 正在备份: ${srcPath} -> ${destAbsPath}`)
+      try {
+        await runRcloneCopyTo(srcPath, destAbsPath)
+      }
+      catch (error: any) {
+        console.error(`[${name}][${index + 1}/${srcFiles.length}] 备份失败: ${error}`)
+      }
+      index++
+    }
     if (isGitBackup) {
       await gitAutoBackup(destPath)
     }
