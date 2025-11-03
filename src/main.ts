@@ -42,113 +42,137 @@ const tempDirPath = os.tmpdir()
 const configFilePath = path.join(basePath, 'config.json')
 
 async function main() {
-  console.log(`<--===([ Game Backup CLI ])===-->
+  let isExit = false
+  while (!isExit) {
+    console.clear()
+    console.log(`<--===([ Game Backup CLI ])===-->
     存档备份还原工具 v${VERSION}
 `)
-  try {
-    if (!checkEnv(['rclone'])) {
-      await waitExit()
-      return
-    }
+    try {
+      if (!checkEnv(['rclone'])) {
+        await waitExit()
+        return
+      }
 
-    // console.log(configFilePath);
-    const config = await readConfigFile(configFilePath)
+      // console.log(configFilePath);
+      const config = await readConfigFile(configFilePath)
 
-    if (!config) {
-      console.error(`配置文件不存在，将创建一个空的 config.json 文件。\n`)
-      // 创建空的 config.json 文件
-      const demoContent: IConfigItem[] = [
-        {
-          name: 'StardewValley',
-          srcPath: '%USERPROFILE%\\AppData\\Roaming\\StardewValley',
-        },
-        {
-          name: 'pvzHE',
-          srcPath: 'C:\\ProgramData\\PopCap Games\\PlantsVsZombies\\pvzHE\\yourdata',
-        },
-      ]
-      // 询问是否创建示例配置文件
-      const { answer }: { answer: boolean } = await enquirer.prompt({
-        type: 'confirm',
-        initial: true,
-        name: 'answer',
-        message: '是否创建示例配置文件？',
-      })
-      if (answer) {
-        await fsPromises.writeFile(configFilePath, JSON.stringify(demoContent, null, 2), 'utf8')
-        console.log(`已创建示例配置文件。请修改该文件，然后重新运行本程序。`)
+      if (!config) {
+        console.error(`配置文件不存在，将创建一个空的 config.json 文件。\nConfig file does not exist. An empty config.json file will be created.`)
+        // 创建空的 config.json 文件
+        const demoContent: IConfigItem[] = [
+          {
+            name: 'StardewValley',
+            srcPath: '%USERPROFILE%\\AppData\\Roaming\\StardewValley',
+          },
+          {
+            name: 'pvzHE',
+            srcPath: 'C:\\ProgramData\\PopCap Games\\PlantsVsZombies\\pvzHE\\yourdata',
+          },
+        ]
+        // 询问是否创建示例配置文件
+        const { answer }: { answer: boolean } = await enquirer.prompt({
+          type: 'confirm',
+          initial: true,
+          name: 'answer',
+          message: '是否创建示例配置文件？\nCreate Demo Config File?',
+        })
+        if (answer) {
+          await fsPromises.writeFile(configFilePath, JSON.stringify(demoContent, null, 2), 'utf8')
+          console.log(`已创建示例配置文件。\nDemo config file has been created.`)
+          continue
+        }
+        else {
+          isExit = true
+          continue
+        }
+      }
+
+      type FnType = 'backup' | 'restore' | 'configEditor' | 'exit' | 'reload'
+      const { selectedFn }: { selectedFn: FnType } = await enquirer.prompt([{
+        type: 'select',
+        name: 'selectedFn',
+        message: '选择功能 | Select Function',
+        choices: [
+          { message: '备份 | Backup', name: 'backup' },
+          { message: '还原 | Restore', name: 'restore' },
+          { message: '配置编辑器 | Config Editor', name: 'configEditor' },
+          { message: '重新加载 | Reload', name: 'reload' },
+          { message: '退出 | Exit', name: 'exit' },
+        ],
+      }])
+
+      if (selectedFn === 'reload') {
+        continue
+      }
+
+      if (selectedFn === 'configEditor') {
         await openConfigEditor()
+        continue
       }
-      process.exit(0)
-    }
 
-    type FnType = 'backup' | 'restore' | 'configEditor' | 'exit'
-    const { selectedFn }: { selectedFn: FnType } = await enquirer.prompt([{
-      type: 'select',
-      name: 'selectedFn',
-      message: '选择功能',
-      choices: [
-        { message: '备份', name: 'backup' },
-        { message: '还原', name: 'restore' },
-        { message: '配置编辑器', name: 'configEditor' },
-        { message: '退出', name: 'exit' },
-      ],
-    }])
-
-    if (selectedFn === 'configEditor') {
-      await openConfigEditor()
-      process.exit(0)
-    }
-    if (selectedFn === 'exit') {
-      process.exit(0)
-    }
-    const isRestore = selectedFn === 'restore'
-    const { backupTargets }: { backupTargets: string[] } = await enquirer.prompt([
-      {
-        type: 'multiselect',
-        name: 'backupTargets',
-        message: `${isRestore ? '还原' : '备份'}: 请选择项目(空格切换选中，按A切换全选，默认全部)`,
-        choices: config.map((item) => {
-          return {
-            message: `${item.name}`,
-            name: item.name,
-            disabled: item.disabled,
-          }
-        }),
-      },
-    ])
-
-    let list = []
-    if (backupTargets.length === 0) {
-      console.log('默认选中所有项目')
-      list = config
-    }
-    else {
-      const nameMap: Record<string, boolean> = {}
-      backupTargets.forEach((item) => {
-        nameMap[item] = true
-      })
-      list = config.filter((item) => {
-        return nameMap[item.name]
-      })
-    }
-
-    for (const item of list) {
-      console.log('\n')
-      try {
-        await backupRestoreSingleItem(item, { basePath, isRestore })
+      if (selectedFn === 'exit') {
+        isExit = true
+        continue
       }
-      catch (error: any) {
-        console.error(`[${item.name}] Error: ${error}`)
+      const isRestore = selectedFn === 'restore' // 'backup'
+
+      if (!config.length) {
+        throw new Error('无可用配置项。\nNo available config items.')
+      }
+
+      const { backupTargets }: { backupTargets: string[] } = await enquirer.prompt([
+        {
+          type: 'multiselect',
+          name: 'backupTargets',
+          message: `${isRestore ? '还原' : '备份'}: 请选择项目(空格切换选中，按A切换全选，默认全部)
+${isRestore ? 'Restore' : 'Backup'}: Select items(space to toggle, "A" to toggle all, default all)`,
+          choices: config.map((item) => {
+            return {
+              message: `${item.name}`,
+              name: item.name,
+              disabled: item.disabled,
+            }
+          }),
+        },
+      ])
+
+      let list: IConfigItem[] = []
+      if (backupTargets.length === 0) {
+        console.log('默认选中所有项目\nDefault select all items')
+        list = config
+      }
+      else {
+        const nameMap: Record<string, boolean> = {}
+        backupTargets.forEach((item) => {
+          nameMap[item] = true
+        })
+        list = config.filter((item) => {
+          return nameMap[item.name]
+        })
+      }
+      if (!list.length) {
+        console.log('未选中任何项目\nNo items selected')
+        continue
+      }
+
+      for (const item of list) {
+        console.log('')
+        try {
+          await backupRestoreSingleItem(item, { basePath, isRestore })
+        }
+        catch (error: any) {
+          console.error(`[${item.name}] Error: ${error}`)
+        }
       }
     }
-
+    catch (error) {
+      console.error(`main: ${error}`)
+    }
+    console.log('')
     await waitExit()
   }
-  catch (error) {
-    console.error(error)
-    await waitExit()
-  }
+  process.exit(0)
 }
 
 main()
@@ -158,26 +182,33 @@ async function openConfigEditor() {
 
   console.log(`
 配置编辑器已在浏览器中打开。请选择或拖拽配置文件到编辑器窗口。
-HTML文件路径：${configEditorPath}
-配置文件路径：${configFilePath}
-保存后请重新运行本程序。`)
-
-  // if (!existsSync(configEditorPath)) {
-  //   await fsPromises.writeFile(configEditorPath, String(configEditorHtml), 'utf8')
-  // }
+Config Editor is opened in browser. Please select or drag the config file to the editor window.
+配置文件路径 | Config File Path：${configFilePath}
+`)
   await fsPromises.writeFile(configEditorPath, String(configEditorHtml), 'utf8')
   opener(configEditorPath)
-  await waitExit()
-}
-
-export async function waitExit() {
-  const { answer }: { answer: boolean } = await enquirer.prompt({
+  await enquirer.prompt({
     type: 'confirm',
     initial: true,
     name: 'answer',
-    message: '按回车键退出...',
+    message: '修改后按回车继续 | Press Enter to Continue',
   })
-  if (answer) {
-    process.exit(0)
+}
+
+export async function waitExit() {
+  try {
+    const { answer }: { answer: boolean } = await enquirer.prompt({
+      type: 'confirm',
+      initial: true,
+      name: 'answer',
+      message: '按回车键退出 | Press Enter to Exit',
+    })
+    if (answer) {
+      process.exit(0)
+    }
+  }
+  catch (error) {
+    console.error(`waitExit: ${error}`)
+    process.exit(1)
   }
 }
