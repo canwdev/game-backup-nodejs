@@ -36,7 +36,7 @@ export function replaceEnvVars(filePath: string) {
 }
 
 // 执行 rclone 命令，返回 Promise
-export async function runRclone(sourcePath: string, destPath: string, {
+export async function runRclone(fromPath: string, toPath: string, {
   transfers = 32,
   checkers = 64,
   exclude = '',
@@ -47,7 +47,7 @@ export async function runRclone(sourcePath: string, destPath: string, {
   exclude?: string | string[]
   include?: string | string[]
 }) {
-  let command = `rclone sync "${sourcePath}" "${destPath}" --transfers ${transfers} --checkers ${checkers} --track-renames --track-renames-strategy modtime,leaf`
+  let command = `rclone sync "${fromPath}" "${toPath}" --transfers ${transfers} --checkers ${checkers} --track-renames --track-renames-strategy modtime,leaf`
   // --progress -v
 
   if (exclude) {
