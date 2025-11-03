@@ -9,7 +9,7 @@ import which from 'which'
 // @ts-ignore-next-line
 import configEditorHtml from '../docs/index.html' with { type: 'text' }
 import { VERSION } from './types/version'
-import { backupRestoreSingleItem, readConfigFile } from './utils/backup-restore'
+import { backupRestoreItem, readConfigFile } from './utils/backup-restore'
 import { opener } from './utils/opener'
 
 // 检测部署环境必要命令
@@ -159,7 +159,7 @@ ${isRestore ? 'Restore' : 'Backup'}: Select items(space to toggle, "A" to toggle
       for (const item of list) {
         console.log('')
         try {
-          await backupRestoreSingleItem(item, { basePath, isRestore })
+          await backupRestoreItem(item, { basePath, isRestore })
         }
         catch (error: any) {
           console.error(`[${item.name}] Error: ${error}`)
