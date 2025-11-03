@@ -99,12 +99,14 @@ export async function readConfigFile(configFilePath: string): Promise<IConfigIte
   }
 }
 
-// 备份单个项目
-export async function backupRestoreSingleItem(item: IConfigItem, { basePath, isRestore = false }: { basePath: string, isRestore?: boolean }) {
+// 备份/还原单个项目
+export async function backupRestoreItem(item: IConfigItem, { basePath, isRestore = false }: { basePath: string, isRestore?: boolean }) {
   let {
+    type,
+    srcFiles,
     name,
-    isGitBackup,
     srcPath,
+    isGitBackup,
     exclude,
     include,
     disabled = false,
@@ -116,6 +118,14 @@ export async function backupRestoreSingleItem(item: IConfigItem, { basePath, isR
     console.log(`[${item.name}] 已禁用，跳过备份`)
     return
   }
+  if (!type) {
+    type = 'folder'
+  }
+  if (type === 'files') {
+    console.log(`TODO: [${item.name}] 备份/还原多个文件未实现`, srcFiles)
+    return
+  }
+
   if (isGitBackup && !exclude) {
     // 如果是git备份，默认排除 .git 目录
     exclude = '.git/'
