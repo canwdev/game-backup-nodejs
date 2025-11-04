@@ -1,17 +1,19 @@
 import antfu from '@antfu/eslint-config'
 
 export default antfu({
-  typescript: {
-    tsconfigPath: 'tsconfig.json',
-  },
+  formatters: true,
+  vue: true,
+
   rules: {
     'no-console': 'off',
-    'ts/no-unsafe-call': 'off',
+    'no-alert': 'off',
+    'vue/no-mutating-props': 'warn',
+    'ts/no-use-before-define': 'off',
+    'regexp/no-unused-capturing-group': 'off',
+    'regexp/no-dupe-disjunctions': 'warn',
+    'unused-imports/no-unused-vars': 'warn',
     'ts/no-floating-promises': 'off',
     'ts/strict-boolean-expressions': 'off',
-    'ts/no-unsafe-member-access': 'off',
-    'ts/no-unsafe-argument': 'warn',
-    'ts/no-unsafe-assignment': 'warn',
     'ts/ban-ts-comment': 'off',
   },
 })

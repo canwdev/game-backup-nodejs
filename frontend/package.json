@@ -1,12 +1,12 @@
 {
-  "name": "config-editor1",
+  "name": "config-editor",
   "private": true,
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev:frontend": "vite",
-    "build:frontend": "vite build",
-    "preview:frontend": "vite preview"
+    "frontend:dev": "vite",
+    "frontend:build": "vite build",
+    "frontend:preview": "vite preview"
   },
   "dependencies": {
     "vue": "^3.5.22"

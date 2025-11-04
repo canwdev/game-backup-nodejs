@@ -121,7 +121,6 @@ export async function readConfigFile(configFilePath: string): Promise<IConfigIte
 export async function backupRestoreItem(item: IConfigItem, { basePath, isRestore = false }: { basePath: string, isRestore?: boolean }) {
   let {
     type,
-    srcFiles,
     name,
     srcPath,
     destPath,
