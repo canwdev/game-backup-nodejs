@@ -9,16 +9,20 @@
     "dev:editor": "bun run docs/index.html",
     "build": "bun build --target=node --format=cjs --minify src/main.ts --outfile ./dist/game-backup-cli.cjs",
     "build:exe": "bun build --compile --minify --sourcemap --bytecode src/main.ts --outfile ./dist/game-backup-cli",
-    "lint": "eslint src/**/*.ts --fix"
+    "build:auto": "bun run ./docs/build.ts",
+    "lint": "eslint src/**/*.{ts,tsx,vue} frontend/**/*.{ts,tsx,vue} --fix",
+    "lint:backend": "eslint src/**/*.{ts,tsx,vue} --fix",
+    "lint:frontend": "eslint frontend/**/*.{ts,tsx,vue} --fix"
   },
   "dependencies": {
     "enquirer": "^2.4.1",
     "which": "^5.0.0"
   },
   "devDependencies": {
-    "@antfu/eslint-config": "^6.0.0",
+    "@antfu/eslint-config": "^5.4.1",
     "@types/node": "^24.7.2",
     "@types/which": "^3.0.4",
-    "eslint": "^9.37.0"
+    "eslint": "^9.37.0",
+    "eslint-plugin-format": "^1.0.2"
   }
 }
