@@ -4,7 +4,7 @@ export interface IConfigItem {
   // 备份类型，默认 folder
   type?: 'folder' | 'files'
   // 仅在 type 为 files 时生效，源路径，绝对路径（可使用环境变量），必填(二选一)
-  srcPath: string
+  srcPath?: string
   // 仅在 type 为 files 时生效，指定要备份的文件列表(绝对路径)，必填(二选一)
   srcFiles?: string[]
   // 目标路径，可选，不传默认使用 ./backup/<name> 作为目标路径
