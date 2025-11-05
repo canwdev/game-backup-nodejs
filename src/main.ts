@@ -45,9 +45,7 @@ async function main() {
   let isExit = false
   while (!isExit) {
     console.clear()
-    console.log(`<--===([ Game Backup CLI ])===-->
-    存档备份还原工具 v${VERSION}
-`)
+    console.log(`<-- 存档备份还原工具 v${VERSION} | Backup Restore Utility -->`)
     try {
       if (!checkEnv(['rclone'])) {
         await waitExit()
@@ -58,7 +56,7 @@ async function main() {
       const config = await readConfigFile(configFilePath)
 
       if (!config) {
-        console.error(`配置文件不存在，将创建一个空的 config.json 文件。\nConfig file does not exist. An empty config.json file will be created.`)
+        console.error(`\n配置文件不存在。Config file does not exist.`)
         // 创建空的 config.json 文件
         const demoContent: IConfigItem[] = [
           {
@@ -75,7 +73,7 @@ async function main() {
           type: 'confirm',
           initial: true,
           name: 'answer',
-          message: '是否创建示例配置文件？\nCreate Demo Config File?',
+          message: `是否创建示例配置文件？Create Demo Config File? \n${configFilePath}`,
         })
         if (answer) {
           await fsPromises.writeFile(configFilePath, JSON.stringify(demoContent, null, 2), 'utf8')
@@ -87,6 +85,7 @@ async function main() {
           continue
         }
       }
+      console.log(`Config Loaded: ${configFilePath}\n`)
 
       type FnType = 'backup' | 'restore' | 'configEditor' | 'exit' | 'reload'
       const { selectedFn }: { selectedFn: FnType } = await enquirer.prompt([{
@@ -178,12 +177,12 @@ ${isRestore ? 'Restore' : 'Backup'}: Select items(space to toggle, "A" to toggle
 main()
 
 async function openConfigEditor() {
-  const configEditorPath = path.join(tempDirPath, 'gbn-config-editor.html')
+  const configEditorPath = path.join(tempDirPath, 'bru-config-editor.html')
 
   console.log(`
 配置编辑器已在浏览器中打开。请选择或拖拽配置文件到编辑器窗口。
 Config Editor is opened in browser. Please select or drag the config file to the editor window.
-配置文件路径 | Config File Path：${configFilePath}
+${configFilePath}
 `)
   await fsPromises.writeFile(configEditorPath, String(configEditorHtml), 'utf8')
   opener(configEditorPath)
