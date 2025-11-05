@@ -3,7 +3,8 @@ import type { IConfigItem } from '@backend/types/config.ts'
 import { VERSION } from '@backend/types/version.ts'
 import { onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 import InsertVariable from '@/components/BackupConfigEditor/InsertVariable.vue'
-import { showToast } from './utils/toast.ts'
+import { removeQuotes, sanitize } from '@/utils/sanitize-filename.ts'
+import { showToast } from '@/utils/toast.ts'
 
 const configList = ref<IConfigItem[]>([])
 // FileHandle 用于 File System Access API
@@ -243,9 +244,24 @@ function resetEditForm() {
   Object.assign(editForm, initialEditFormState)
 }
 
+function formatUniqueName() {
+  editForm.name = sanitize(editForm.name)
+}
 function generateName() {
   const path = editForm.srcPath || ''
-  editForm.name = extractLastSegment(path) || `backup_${Date.now()}`
+  editForm.name = sanitize(extractLastSegment(path) || `backup_${Date.now()}`)
+}
+function formatPath(key: string) {
+  setTimeout(() => {
+    let val = (editForm[key] as string || '').trim()
+    if (val.includes('\n')) {
+      val = val.split('\n').map(line => removeQuotes(line)).join('\n')
+    }
+    else {
+      val = removeQuotes(val)
+    }
+    editForm[key] = val
+  }, 0)
 }
 
 function submitEditForm() {
@@ -256,7 +272,7 @@ function submitEditForm() {
     name: editForm.name,
     type: editForm.type,
     srcFiles: processMultiLineInput(editForm._srcFiles),
-    srcPath: editForm.srcPath,
+    srcPath: editForm.srcPath || undefined,
     destPath: editForm.destPath || undefined,
     isGitBackup: editForm.isGitBackup || undefined,
     ignorePathCheck: editForm.ignorePathCheck || undefined,
@@ -397,7 +413,7 @@ onBeforeUnmount(() => {
                 {{ config.name }}
               </div>
               <div class="config-item-path">
-                {{ config.srcPath }}
+                {{ [config.type, config.srcPath].filter(Boolean).join(': ') }}
               </div>
             </div>
             <div class="config-item-actions">
@@ -454,7 +470,7 @@ onBeforeUnmount(() => {
 
           <label for="configName"><b class="color-danger">*</b> Name:</label>
           <div class="input-group">
-            <input id="configName" v-model="editForm.name" autocomplete="off" placeholder="Unique name" required type="text">
+            <input id="configName" v-model="editForm.name" autocomplete="off" placeholder="Unique name" required type="text" @blur="formatUniqueName">
             <button class="c-button" type="button" @click="generateName">
               ↺
             </button>
@@ -468,6 +484,7 @@ onBeforeUnmount(() => {
                 v-model="editForm.srcPath" class="variable-input-target" autocomplete="off"
                 placeholder="Path to the source directory"
                 required type="text"
+                @blur="formatPath('srcPath')"
               >
               <InsertVariable />
             </div>
@@ -478,7 +495,9 @@ onBeforeUnmount(() => {
               <textarea
                 id="exclude"
                 v-model="editForm._srcFiles" class="variable-input-target"
-                placeholder="One path per line" required
+                placeholder="One path per line"
+                required
+                @blur="formatPath('_srcFiles')"
               />
               <InsertVariable />
             </div>
@@ -490,6 +509,7 @@ onBeforeUnmount(() => {
               id="destPath"
               v-model="editForm.destPath" class="variable-input-target" autocomplete="off"
               placeholder="Optional. Default: ./backup/${name}" type="text"
+              @blur="formatPath('destPath')"
             >
             <InsertVariable />
           </div>
@@ -512,12 +532,14 @@ onBeforeUnmount(() => {
             <textarea
               id="exclude" v-model="editForm._exclude"
               placeholder="Optional. One pattern per line. Example:&#10;**&#10;**/Cache/*&#10;History_*.*&#10;DiskSearch.db"
+              @blur="formatPath('_exclude')"
             />
 
             <label for="include">Include:</label>
             <textarea
               id="include" v-model="editForm._include"
               placeholder="Optional. One pattern per line. Example:&#10;.gitconfig&#10;.ssh/**"
+              @blur="formatPath('_include')"
             />
 
             <label for="transfers">Transfers:</label>
