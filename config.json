@@ -1,0 +1,11 @@
+[
+  {
+    "name": "backup_files",
+    "type": "files",
+    "srcFiles": [
+      "D:\\Downloads\\temp\\a1.txt",
+      "D:\\Downloads\\temp\\a2.txt"
+    ],
+    "srcPath": ""
+  }
+]

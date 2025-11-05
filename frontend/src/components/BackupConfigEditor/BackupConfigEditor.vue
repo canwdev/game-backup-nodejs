@@ -377,7 +377,7 @@ onBeforeUnmount(() => {
     class="config-editor-root" :class="{ isDragging }" @dragover.prevent="handleDragOver" @dragleave="handleDragLeave"
     @drop.prevent="handleDrop"
   >
-    <h1>Backup Config Editor v{{ VERSION }}</h1>
+    <h1>Config Editor v{{ VERSION }}</h1>
 
     <div class="toolbar">
       <button class="c-button button-primary" @click="newConfig">
