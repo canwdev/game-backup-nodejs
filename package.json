@@ -20,11 +20,9 @@
     "lint:backend": "eslint src/**/*.{ts,tsx,vue} --fix",
     "lint:frontend": "eslint frontend/**/*.{ts,tsx,vue} --fix"
   },
-  "dependencies": {
-    "enquirer": "^2.4.1",
-    "which": "^5.0.0"
-  },
   "devDependencies": {
+    "enquirer": "^2.4.1",
+    "which": "^5.0.0",
     "@antfu/eslint-config": "^5.4.1",
     "@types/node": "^24.7.2",
     "@types/which": "^3.0.4",
