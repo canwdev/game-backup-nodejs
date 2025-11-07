@@ -1,9 +1,15 @@
 {
-  "name": "game-backup-nodejs",
+  "name": "game-backup-cli",
   "version": "1.2.0",
-  "repository": "https://github.com/canwdev/game-backup-nodejs.git",
+  "repository": "https://github.com/canwdev/game-backup-cli.git",
   "license": "MIT",
   "type": "module",
+  "bin": {
+    "game-backup-cli": "./dist/game-backup-cli.cjs"
+  },
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "dev": "bun --watch run src/main.ts",
     "dev:editor": "bun run docs/index.html",

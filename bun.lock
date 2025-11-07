@@ -2,7 +2,7 @@
   "lockfileVersion": 1,
   "workspaces": {
     "": {
-      "name": "game-backup-nodejs",
+      "name": "game-backup-cli",
       "dependencies": {
         "enquirer": "^2.4.1",
         "which": "^5.0.0",

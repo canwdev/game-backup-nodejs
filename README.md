@@ -42,7 +42,7 @@
 
 - 配置定义：[config.ts](./src/types/config.ts)
 - [配置编辑器，本地](./docs/index.html)
-- [配置编辑器，在线](https://canwdev.github.io/game-backup-nodejs/)
+- [配置编辑器，在线](https://canwdev.github.io/game-backup-cli/)
 
 ```json
 [
