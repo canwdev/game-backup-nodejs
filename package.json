@@ -1,5 +1,5 @@
 {
-  "name": "@canwdev/game-backup-cli",
+  "name": "game-backup-cli",
   "version": "1.2.0",
   "repository": "https://github.com/canwdev/game-backup-cli.git",
   "license": "MIT",

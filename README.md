@@ -29,7 +29,7 @@
 ### 或 npm 全局安装
 
 ```bash
-npm install -g @canwdev/game-backup-cli
+npm install -g game-backup-cli
 # 运行
 game-backup-cli
 ```
