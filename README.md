@@ -101,5 +101,7 @@ bun run build:auto
 
 # 发布npm
 npm login
-npm publish  --access public
+npm publish --access public
 ```
+
+npm 注意：不要把依赖安装在 `dependencies` 中，应该安装在 `devDependencies` 中，否则用户安装时会把没有必要的依赖也安装进去。
