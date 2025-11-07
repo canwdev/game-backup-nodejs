@@ -5,5 +5,5 @@ import GithubRibbon from '@/components/GithubRibbon.vue'
 
 <template>
   <BackupConfigEditor />
-  <GithubRibbon href="https://github.com/canwdev/game-backup-nodejs" />
+  <GithubRibbon href="https://github.com/canwdev/game-backup-cli" />
 </template>
