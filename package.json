@@ -1,6 +1,6 @@
 {
   "name": "game-backup-cli",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "repository": "https://github.com/canwdev/game-backup-cli.git",
   "license": "MIT",
   "type": "module",
@@ -13,7 +13,7 @@
   "scripts": {
     "dev": "bun --watch run src/main.ts",
     "dev:editor": "bun run docs/index.html",
-    "build": "bun build --target=node --format=cjs --minify src/main.ts --outfile ./dist/game-backup-cli.cjs",
+    "build": "bun build --target=node --format=cjs --minify src/main.ts --outfile ./dist/game-backup-cli.cjs --banner '#!/usr/bin/env node\n'",
     "build:exe": "bun build --compile --minify --sourcemap --bytecode src/main.ts --outfile ./dist/game-backup-cli",
     "build:auto": "bun run ./docs/build.ts",
     "lint": "eslint src/**/*.{ts,tsx,vue} frontend/**/*.{ts,tsx,vue} --fix",
