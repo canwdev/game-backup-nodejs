@@ -1,8 +1,21 @@
 # 在推送 tag（如 v1.3.0）或手动运行时，通过根目录脚本 build:auto（docs/build.ts）完成：
 # 安装依赖 → ESLint → 前端构建到 docs/ → CLI 构建到 dist/ → 将 package.json version 与 src/types/version.ts 对齐
-# 随后部署 GitHub Pages（docs/），上传 workflow artifact；推送 tag 时在 Release 附上 docs/index.html 与 dist/game-backup-cli.cjs
+# 上传 Pages 构建产物、workflow artifact；推送 tag 时在 Release 附上 docs/index.html 与 dist/game-backup-cli.cjs
 #
 # 使用前请在仓库 Settings → Pages → Build and deployment → Source 选择「GitHub Actions」。
+#
+# --- github-pages 环境与 tag ---
+# 若 job 使用 environment: github-pages，则「整个 job」都会受 Environment 部署规则约束。
+# 默认规则常只允许 main 等分支，从 tag 触发时会报错：Tag "v*" is not allowed to deploy...
+#
+# 做法 A（推荐，发 tag 也要更新 Pages）：
+#   Settings → Environments → github-pages → Deployment branches and tags
+#   改为「All branches and tags」，或添加标签规则（如 v*）。
+#   然后删除本文件中 deploy 任务上的 `if: github.ref_type != 'tag'`。
+#
+# 做法 B（不改环境规则）：
+#   保留下方 deploy 的 `if: github.ref_type != 'tag'`：发 tag 仍会构建并发布 Release 附件，但不会部署 Pages；
+#   需要更新站点时在默认分支上手动 Run workflow。
 
 name: Release
 
@@ -17,16 +30,13 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  release:
-    name: build:auto → Pages & CLI
+  build:
+    name: build:auto & Release assets
     runs-on: ubuntu-latest
     permissions:
       contents: write
       pages: write
       id-token: write
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
 
@@ -46,9 +56,6 @@ jobs:
         with:
           path: docs
 
-      - uses: actions/deploy-pages@v4
-        id: deployment
-
       - uses: actions/upload-artifact@v4
         with:
           name: release-build
@@ -66,3 +73,19 @@ jobs:
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  deploy:
+    name: Deploy GitHub Pages
+    needs: build
+    # 环境保护规则未包含 tag 时跳过，避免整段 workflow 失败；见文件头说明
+    if: github.ref_type != 'tag'
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/deploy-pages@v4
+        id: deployment
