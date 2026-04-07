@@ -40,8 +40,9 @@ async function build() {
   console.log('Cleaned dist directory.')
 
   await runInDir('Installing dependencies...', backendPath, ['bun i'])
+  // ESLint 9 + @antfu/eslint-config 依赖 Object.groupBy（Node 22+）；bunx 在部分环境下仍用旧运行时，故用 node 执行本地 eslint
   await runInDir('Code checking...', backendPath, [
-    'bunx eslint src/**/*.{ts,tsx,vue} frontend/**/*.{ts,tsx,vue} --fix',
+    'node ./node_modules/eslint/bin/eslint.js src/**/*.{ts,tsx,vue} frontend/**/*.{ts,tsx,vue} --fix',
   ])
   // 构建前端
   await runInDir('Building frontend, please wait...', frontendPath, [

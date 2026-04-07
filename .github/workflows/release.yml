@@ -30,6 +30,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # ESLint 扁平配置链用到 Object.groupBy，需 Node 22+（ubuntu 默认 Node 较旧）
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
