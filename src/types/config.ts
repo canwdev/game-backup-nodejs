@@ -19,8 +19,10 @@ export interface IConfigItem {
   disabled?: boolean
   // 是否忽略本地路径检查（如果路径是rclone远程路径，可以传入true），默认 false
   ignorePathCheck?: boolean
-  // 默认 32
+  // 默认 3（见 DEFAULT_RCLONE_TRANSFERS）
   transfers?: number
-  // 默认 64
+  // 默认 8（见 DEFAULT_RCLONE_CHECKERS）
   checkers?: number
+  // 追加到 rclone sync 命令末尾的额外参数（空格分隔的 flag），可选
+  extraParams?: string
 }

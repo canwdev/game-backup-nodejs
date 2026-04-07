@@ -1,0 +1,59 @@
+# 在推送 tag（如 v1.3.0）或手动运行时，通过根目录脚本 build:auto（docs/build.ts）完成：
+# 安装依赖 → ESLint → 前端构建到 docs/ → CLI 构建到 dist/ → 将 package.json version 与 src/types/version.ts 对齐
+# 随后部署 GitHub Pages（docs/），并上传 / 发布 dist/game-backup-cli.cjs
+#
+# 使用前请在仓库 Settings → Pages → Build and deployment → Source 选择「GitHub Actions」。
+
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: build:auto → Pages & CLI
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Full build (lint, frontend → docs, CLI → dist)
+        run: bun run build:auto
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs
+
+      - uses: actions/deploy-pages@v4
+        id: deployment
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: game-backup-cli-cjs
+          path: dist/game-backup-cli.cjs
+
+      - name: Attach to GitHub Release (tags only)
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/game-backup-cli.cjs
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

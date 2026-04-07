@@ -5,6 +5,7 @@ import * as os from 'node:os'
 import * as path from 'node:path'
 import * as process from 'node:process'
 import { gitAutoBackup } from './git-auto-backup'
+import { buildRcloneSyncCommand, DEFAULT_RCLONE_CHECKERS, DEFAULT_RCLONE_TRANSFERS } from './rclone-sync-command'
 
 // 替换环境变量
 export function replaceEnvVars(filePath: string) {
@@ -54,36 +55,14 @@ export async function runRcloneCopyTo(fromPath: string, toPath: string) {
 }
 
 // 执行 rclone 命令，返回 Promise
-export async function runRcloneSync(fromPath: string, toPath: string, {
-  transfers = 32,
-  checkers = 64,
-  exclude = '',
-  include = '',
-}: {
+export async function runRcloneSync(fromPath: string, toPath: string, options: {
   transfers?: number
   checkers?: number
   exclude?: string | string[]
   include?: string | string[]
-}) {
-  let command = `rclone sync "${fromPath}" "${toPath}" --transfers ${transfers} --checkers ${checkers} --track-renames --track-renames-strategy modtime,leaf`
-  // --progress -v
-
-  if (exclude) {
-    if (!Array.isArray(exclude)) {
-      exclude = [exclude]
-    }
-    exclude.forEach((ex) => {
-      command += ` --exclude "${ex}"`
-    })
-  }
-  if (include) {
-    if (!Array.isArray(include)) {
-      include = [include]
-    }
-    include.forEach((inl) => {
-      command += ` --include "${inl}"`
-    })
-  }
+  extraParams?: string
+} = {}) {
+  const command = buildRcloneSyncCommand(fromPath, toPath, options)
   console.log(`>>> ${command}`)
 
   return new Promise<void>((resolve, reject) => {
@@ -129,8 +108,9 @@ export async function backupRestoreItem(item: IConfigItem, { basePath, isRestore
     include,
     disabled = false,
     ignorePathCheck = false,
-    transfers = 32,
-    checkers = 64,
+    transfers = DEFAULT_RCLONE_TRANSFERS,
+    checkers = DEFAULT_RCLONE_CHECKERS,
+    extraParams = '',
   } = item
   if (disabled) {
     console.log(`[${item.name}] 已禁用，跳过备份`)
@@ -175,6 +155,7 @@ export async function backupRestoreItem(item: IConfigItem, { basePath, isRestore
     checkers,
     exclude,
     include,
+    extraParams,
   }
   if (isRestore) {
     // 还原时，将目标路径作为源路径，源路径作为目标路径

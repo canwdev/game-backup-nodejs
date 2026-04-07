@@ -3,4 +3,6 @@ node_modules
 dist
 .idea
 
-dist/config.json
+dist/backup-config.json
+docs/index.html
+backup-config.json

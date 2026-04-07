@@ -1,7 +1,12 @@
 <script setup lang="ts">
 import type { IConfigItem } from '@backend/types/config.ts'
 import { VERSION } from '@backend/types/version.ts'
-import { onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
+import {
+  buildRcloneSyncCommand,
+  DEFAULT_RCLONE_CHECKERS,
+  DEFAULT_RCLONE_TRANSFERS,
+} from '@backend/utils/rclone-sync-command.ts'
+import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 import InsertVariable from '@/components/BackupConfigEditor/InsertVariable.vue'
 import { removeQuotes, sanitize } from '@/utils/sanitize-filename.ts'
 import { showToast } from '@/utils/toast.ts'
@@ -28,6 +33,7 @@ const initialEditFormState: IEditForm = {
   disabled: false,
   transfers: undefined as number | undefined,
   checkers: undefined as number | undefined,
+  extraParams: '',
   _srcFiles: '',
   _exclude: '',
   _include: '',
@@ -39,6 +45,25 @@ const editDialogRef = ref<HTMLDialogElement | null>(null)
 const fileInputRef = ref<HTMLInputElement | null>(null)
 
 const rawJsonInput = ref('')
+
+/** 与提交逻辑一致：备份方向下的 rclone sync 预览 */
+const rcloneSyncCommandPreview = computed(() => {
+  if (editForm.type !== 'folder')
+    return ''
+  const from = (editForm.srcPath || '').trim() || '<source>'
+  const name = (editForm.name || '').trim() || '<name>'
+  const dest = (editForm.destPath || '').trim() || `./backup/${name}`
+  const transfers = (editForm.transfers !== undefined && editForm.transfers > 0) ? editForm.transfers : DEFAULT_RCLONE_TRANSFERS
+  const checkers = (editForm.checkers !== undefined && editForm.checkers > 0) ? editForm.checkers : DEFAULT_RCLONE_CHECKERS
+  return buildRcloneSyncCommand(from, dest, {
+    transfers,
+    checkers,
+    exclude: processMultiLineInput(editForm._exclude),
+    include: processMultiLineInput(editForm._include),
+    extraParams: editForm.extraParams,
+  })
+})
+
 watch(configList, (newValue) => {
   rawJsonInput.value = JSON.stringify(newValue, null, 2)
 }, {
@@ -68,12 +93,15 @@ function formatForTextarea(data: string | string[] | undefined): string {
   return data || ''
 }
 
+const TRAILING_SLASHES_RE = /[\\/]+$/
+const LAST_PATH_SEGMENT_RE = /[/\\]([^/\\]*)$/
+
 /**
  * 从路径中提取最后一个段落作为名称
  */
 function extractLastSegment(path: string): string {
-  path = path.replace(/[\\/]+$/, '') // 移除尾部斜杠
-  return path.match(/[/\\]([^/\\]*)$/)?.[1] || path
+  path = path.replace(TRAILING_SLASHES_RE, '') // 移除尾部斜杠
+  return path.match(LAST_PATH_SEGMENT_RE)?.[1] || path
 }
 
 /**
@@ -185,7 +213,7 @@ async function handleSave() {
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = 'config.json'
+    a.download = 'backup-config.json'
     document.body.appendChild(a)
     a.click()
     document.body.removeChild(a)
@@ -229,6 +257,7 @@ function openEditDialog(index: number = -1) {
     editForm._include = formatForTextarea(config.include)
     editForm.transfers = config.transfers
     editForm.checkers = config.checkers
+    editForm.extraParams = config.extraParams || ''
   }
 
   editDialogRef.value?.showModal()
@@ -281,6 +310,7 @@ function submitEditForm() {
     include: processMultiLineInput(editForm._include),
     transfers: (editForm.transfers !== undefined && editForm.transfers > 0) ? editForm.transfers : undefined,
     checkers: (editForm.checkers !== undefined && editForm.checkers > 0) ? editForm.checkers : undefined,
+    extraParams: editForm.extraParams?.trim() || undefined,
   }
 
   // 检查名称唯一性
@@ -370,6 +400,14 @@ onMounted(() => {
 onBeforeUnmount(() => {
   document.removeEventListener('keydown', handleKeyDown)
 })
+
+const excludeExample = `Optional. One pattern per line. Example:
+**
+.git/**
+/node_modules/**
+**/node_modules/**
+History_*.*
+DiskSearch.db`
 </script>
 
 <template>
@@ -531,7 +569,7 @@ onBeforeUnmount(() => {
             <label for="exclude">Exclude:</label>
             <textarea
               id="exclude" v-model="editForm._exclude"
-              placeholder="Optional. One pattern per line. Example:&#10;**&#10;**/Cache/*&#10;History_*.*&#10;DiskSearch.db"
+              :placeholder="excludeExample"
               @blur="formatPath('_exclude')"
             />
 
@@ -544,15 +582,33 @@ onBeforeUnmount(() => {
 
             <label for="transfers">Transfers:</label>
             <input
-              id="transfers" v-model.number="editForm.transfers" min="0" placeholder="Optional. Default: 32"
+              id="transfers"
+              v-model.number="editForm.transfers"
+              min="0"
+              :placeholder="`Optional. Default: ${DEFAULT_RCLONE_TRANSFERS}`"
               type="number"
             >
 
             <label for="checkers">Checkers:</label>
             <input
-              id="checkers" v-model.number="editForm.checkers" min="0" placeholder="Optional. Default: 64"
+              id="checkers"
+              v-model.number="editForm.checkers"
+              min="0"
+              :placeholder="`Optional. Default: ${DEFAULT_RCLONE_CHECKERS}`"
               type="number"
             >
+
+            <label for="extraParams">Extra params (rclone):</label>
+            <input
+              id="extraParams"
+              v-model="editForm.extraParams"
+              autocomplete="off"
+              placeholder="Optional. Example: --dry-run --verbose"
+              type="text"
+            >
+
+            <label class="rclone-preview-label">Preview Command</label>
+            <pre class="rclone-command-preview">{{ rcloneSyncCommandPreview }}</pre>
           </template>
         </div>
       </form>
@@ -776,6 +832,26 @@ onBeforeUnmount(() => {
     gap: 10px;
     align-items: center;
     position: relative;
+  }
+
+  .form-grid .rclone-preview-label {
+    align-self: start;
+    padding-top: 4px;
+  }
+
+  .rclone-command-preview {
+    margin: 0;
+    padding: 10px;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    background: rgba(0, 0, 0, 0.06);
+    font-family: Consolas, monospace;
+    font-size: 12px;
+    line-height: 1.45;
+    white-space: pre-wrap;
+    word-break: break-all;
+    max-height: 160px;
+    overflow: auto;
   }
 
   .title-wrapper {

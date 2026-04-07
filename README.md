@@ -37,6 +37,8 @@ game-backup-cli
 
 ### 2.1 最简单的配置
 
+CLI 会在当前工作目录读取 **`backup-config.json`**（若不存在可按提示创建示例文件）。
+
 注意：标准 JSON 不支持注释，请在使用时删除注释。
 
 ```json
